@@ -28,12 +28,8 @@ class LightGBMTrainer(BaseModel):
         X_train = X_train[self.cfg.data.features]
         X_valid = X_valid[self.cfg.data.features]
 
-        train_set = lgb.Dataset(
-            X_train, y_train, params=params, group=train_groups, feature_name=self.cfg.data.features
-        )
-        valid_set = lgb.Dataset(
-            X_valid, y_valid, params=params, group=valid_groups, feature_name=self.cfg.data.features
-        )
+        train_set = lgb.Dataset(X_train, y_train, params=params, group=train_groups)
+        valid_set = lgb.Dataset(X_valid, y_valid, params=params, group=valid_groups)
 
         model = lgb.train(
             params=params,
@@ -47,4 +43,3 @@ class LightGBMTrainer(BaseModel):
         )
 
         return model
-        
