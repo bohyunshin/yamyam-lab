@@ -152,6 +152,8 @@ pexpect==4.9.0
 platformdirs==4.3.6
     # via black
     # via jupyter-core
+prettytable==3.12.0
+    # via yamyam-lab
 prompt-toolkit==3.0.48
     # via ipython
 propcache==0.2.0
@@ -229,6 +231,7 @@ tzdata==2024.2
 urllib3==2.2.3
     # via requests
 wcwidth==0.2.13
+    # via prettytable
     # via prompt-toolkit
 xgboost==2.1.2
     # via yamyam-lab

@@ -14,10 +14,7 @@ def _main(cfg: DictConfig):
 
     # load dataset
     X_train, y_train, X_test, y_test = load_and_prepare_lightgbm_data(
-        test_size=cfg.data.test_size,
-        min_reviews=cfg.data.min_reviews,
-        X_columns=cfg.data.X_columns,
-        y_columns=cfg.data.y_columns,
+        cfg, test_size=cfg.data.test_size, min_reviews=cfg.data.min_reviews
     )
 
     # train model
