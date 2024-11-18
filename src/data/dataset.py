@@ -1,5 +1,5 @@
 import os
-
+import glob
 import pandas as pd
 import torch
 from omegaconf import DictConfig
@@ -11,14 +11,16 @@ DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../data
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 torch.set_default_device(device.type)
 
+# Load data
+review_data_paths = glob.glob(os.path.join(DATA_PATH, 'review', '*.csv'))
+    
 
 def load_and_prepare_graph_data(test_size, min_reviews):
-    # Load data
-    review_1 = pd.read_csv(os.path.join(DATA_PATH, "review_df_20241107_071929_yamyam_1.csv"))
-    review_2 = pd.read_csv(os.path.join(DATA_PATH, "review_df_20241107_071929_yamyam_2.csv"))
-    review = pd.concat([review_1, review_2], axis=0)
-    del review_1, review_2
 
+    review = pd.DataFrame()
+    for review_data_path in review_data_paths:
+        review = pd.concat([review, pd.read_csv(review_data_path)], axis=0)
+    
     # Map diner and reviewer IDs
     diner_idxs = sorted(list(review["diner_idx"].unique()))
     reviewer_ids = sorted(list(review["reviewer_id"].unique()))
@@ -65,10 +67,11 @@ def load_and_prepare_lightgbm_data(
     stratify: column to stratify review data
     """
     # load data
-    review_1 = pd.read_csv(os.path.join(DATA_PATH, "review_df_20241107_071929_yamyam_1.csv"), index_col=0)
-    review_2 = pd.read_csv(os.path.join(DATA_PATH, "review_df_20241107_071929_yamyam_2.csv"), index_col=0)
-    diner = pd.read_csv(os.path.join(DATA_PATH, "diner_df_20241107_071929_yamyam.csv"), index_col=0)
-    review = pd.concat([review_1, review_2], axis=0)
+    diner = pd.read_csv(os.path.join(DATA_PATH, "diner_df_20241118_yamyam.csv"), index_col=0)
+    review = pd.DataFrame()
+    for review_data_path in review_data_paths:
+        review = pd.concat([review, pd.read_csv(review_data_path)], axis=0)
+    
 
     # make time feature
     for i, time in enumerate(["year", "month", "day"]):
@@ -77,7 +80,7 @@ def load_and_prepare_lightgbm_data(
 
     review = pd.merge(review, diner, on="diner_idx", how="inner")
 
-    del review_1, review_2, diner
+    del diner
 
     # store unique number of diner and reviewer
     diner_idxs = sorted(list(review["diner_idx"].unique()))
