@@ -72,7 +72,7 @@ class SVDWithBias(nn.Module):
             for K in top_K:
                 if len(val_liked_item_id) < K:
                     continue
-                pred_liked_item_id = torch.topk(scores, k=K).indices.detach().numpy()
+                pred_liked_item_id = torch.topk(scores, k=K).indices.detach().cpu().numpy()
                 metric = ranking_metrics_at_k(val_liked_item_id, pred_liked_item_id)
                 metric_at_K[K]["map"] += metric["ap"]
                 metric_at_K[K]["ndcg"] += metric["ndcg"]
