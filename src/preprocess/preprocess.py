@@ -88,7 +88,7 @@ def train_test_split_stratify(test_size,
 
 
 def prepare_torch_dataloader(X_train, y_train, X_val, y_val, batch_size=128, random_state=42):
-    seed = torch.Generator().manual_seed(random_state)
+    seed = torch.Generator(device=device.type).manual_seed(random_state)
 
     train_dataset = TorchData(X_train, y_train)
     val_dataset = TorchData(X_val, y_val)
