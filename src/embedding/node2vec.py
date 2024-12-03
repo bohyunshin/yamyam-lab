@@ -3,6 +3,10 @@ from torch_geometric.nn import Node2Vec as Node2VecPG
 
 from embedding.base import BaseEmbedding
 
+# set cpu or cuda for default option
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+torch.set_default_device(device.type)
+
 
 class Node2Vec(BaseEmbedding):
     def __init__(self):
