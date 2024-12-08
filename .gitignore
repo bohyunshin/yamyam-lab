@@ -6,5 +6,6 @@ venv/
 *.pkl
 __pycache__/
 .ipynb_checkpoints/
+.python-version
 
 res/models/*
