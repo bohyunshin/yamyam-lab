@@ -1,0 +1,80 @@
+from abc import ABC, abstractmethod
+import pickle
+import torch
+import numpy as np
+
+from tools.utils import convert_tensor
+from evaluation.metric import ranking_metrics_at_k
+
+# set cpu or cuda for default option
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+torch.set_default_device(device.type)
+
+
+class BaseEmbedding(ABC):
+    def __init__(self, user_ids, diner_ids):
+        self.user_ids = user_ids
+        self.diner_ids = diner_ids
+        self.num_users = len(self.user_ids)
+        self.num_diners = len(self.diner_ids)
+
+    @abstractmethod
+    def initialize(self, edge_index, **kwargs):
+        raise NotImplementedError
+
+    def train(self, **kwargs):
+        self.model.train()
+        loader = self.model.loader(batch_size=kwargs["batch_size"], shuffle=True)
+        total_loss = 0
+        for pos_rw, neg_rw in loader:
+            self.optimizer.zero_grad()
+            loss = self.model.loss(pos_rw.to(device), neg_rw.to(device))
+            loss.backward()
+            self.optimizer.step()
+            total_loss += loss.item()
+        total_loss /= len(loader)
+        return total_loss
+
+    def recommend(self, X_train, X_val, top_K = [3, 5, 7, 10, 20], filter_already_liked=True):
+        user_embeds = self.model.embedding(self.user_ids)
+        diner_embeds = self.model.embedding(self.diner_ids)
+        scores = torch.mm(user_embeds, diner_embeds.t())
+
+        self.map = 0.
+        self.ndcg = 0.
+
+        train_liked = convert_tensor(X_train, list)
+        val_liked = convert_tensor(X_val, list)
+        res = {}
+        metric_at_K = {k: {"map": 0, "ndcg": 0, "count": 0} for k in top_K}
+
+        # filter item_id in train dataset
+        if filter_already_liked:
+            for user_id in self.user_ids:
+                user_id = user_id.item()
+                user_liked_items = train_liked[user_id]
+                for already_liked_item_id in user_liked_items:
+                    scores[user_id - self.num_diners][already_liked_item_id] = -float('inf')  # not recommend already chosen item_id
+
+        # calculate metric
+        for user_id in self.user_ids:
+            user_id = user_id.item()
+            val_liked_item_id = np.array(val_liked[user_id])
+            for K in top_K:
+                if len(val_liked_item_id) < K:
+                    continue
+                score = scores[user_id - self.num_diners]
+                pred_liked_item_id = torch.topk(score, k=K).indices.detach().cpu().numpy()
+                metric = ranking_metrics_at_k(val_liked_item_id, pred_liked_item_id)
+                metric_at_K[K]["map"] += metric["ap"]
+                metric_at_K[K]["ndcg"] += metric["ndcg"]
+                metric_at_K[K]["count"] += 1
+
+                # store recommendation result when K=20
+                if K == 20:
+                    res[user_id] = pred_liked_item_id
+        for K in top_K:
+            metric_at_K[K]["map"] /= metric_at_K[K]["count"]
+            metric_at_K[K]["ndcg"] /= metric_at_K[K]["count"]
+        self.metric_at_K = metric_at_K
+        return res
