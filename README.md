@@ -34,6 +34,20 @@ After setting up python version, just run following command which will install a
 $ poetry install
 ```
 
+### Note
+
+If you want to add package to `pyproject.toml`, please use following command.
+
+```shell
+$ poetry add "package==1.0.0"
+```
+
+Then, update `poetry.lock` to ensure that repository members share same environment setting.
+
+```shell
+$ poetry lock
+```
+
 ## Experiment results
 
 |Algorithm|Task|mAP@3|mAP@7|mAP@10|NDCG@3|NDCG@7|NDCG@10|
