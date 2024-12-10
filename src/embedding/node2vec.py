@@ -1,4 +1,3 @@
-import pickle
 import torch
 from torch_geometric.nn import Node2Vec as Node2VecPG
 
@@ -75,7 +74,10 @@ if __name__ == "__main__":
             **vars(args)
         )
         for epoch in range(args.epochs):
-            train_loss = node2vec.train(batch_size=args.batch_size)
+            train_loss = node2vec.train(
+                batch_size=args.batch_size,
+                random_state=args.random_state,
+            )
             logger.info(f"epoch {epoch}: train loss {train_loss:.4f}")
 
             recommendations = node2vec.recommend(data["X_train"], data["X_val"], filter_already_liked=True)

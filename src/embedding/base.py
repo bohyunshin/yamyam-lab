@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import pickle
 import torch
 import numpy as np
 
@@ -24,7 +23,8 @@ class BaseEmbedding(ABC):
 
     def train(self, **kwargs):
         self.model.train()
-        loader = self.model.loader(batch_size=kwargs["batch_size"], shuffle=True)
+        seed = torch.Generator(device=device.type).manual_seed(kwargs["random_state"])
+        loader = self.model.loader(batch_size=kwargs["batch_size"], shuffle=True, generator=seed)
         total_loss = 0
         for pos_rw, neg_rw in loader:
             self.optimizer.zero_grad()
