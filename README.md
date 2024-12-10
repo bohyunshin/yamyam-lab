@@ -52,5 +52,5 @@ $ poetry lock
 
 |Algorithm|Task|mAP@3|mAP@7|mAP@10|NDCG@3|NDCG@7|NDCG@10|
 |----------------|---------|------|------|------|-------|-------|-------|
-|SVD|Regression|TBD|TBD|TBD|TBD|TBD|TBD|
-|node2vec|Embedding|TBD|TBD|TBD|TBD|TBD|TBD|
+|SVD|Regression|0.00087|0.00066|0.00065|0.00127|0.00148|0.00183|
+|node2vec|Embedding|0.0058|0.00384|0.00355|0.00876|0.00918|0.01006|
