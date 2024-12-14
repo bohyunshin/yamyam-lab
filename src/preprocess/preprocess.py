@@ -51,15 +51,18 @@ def train_test_split_stratify(test_size,
     pg_model: indicator whether using torch_geometric model or not
     """
     # load data
-    review_1 = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241204_part_1.csv"))
-    review_2 = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241204_part_2.csv"))
-    review_3 = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241204_part_3.csv"))
-    review_4 = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241204_part_4.csv"))
-    review = pd.concat([review_1, review_2, review_3, review_4], axis=0)[X_columns + y_columns]
-    del review_1
-    del review_2
-    del review_3
-    del review_4
+    # review_1 = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241204_part_1.csv"))
+    # review_2 = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241204_part_2.csv"))
+    # review_3 = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241204_part_3.csv"))
+    # review_4 = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241204_part_4.csv"))
+    # review = pd.concat([review_1, review_2, review_3, review_4], axis=0)[X_columns + y_columns]
+    # del review_1
+    # del review_2
+    # del review_3
+    # del review_4
+
+    review = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241204_part_1.csv"))
+    diner = pd.read_csv(os.path.join(DATA_PATH, "diner/diner_df_20241204_yamyam.csv"))
 
     # filter reviewer who wrote reviews more than min_reviews
     reviewer2review_cnt = review["reviewer_id"].value_counts().to_dict()
@@ -67,7 +70,7 @@ def train_test_split_stratify(test_size,
     review = review[lambda x: x["reviewer_id"].isin(reviewer_id_over)]
 
     # store unique number of diner and reviewer
-    diner_idxs = sorted(list(review["diner_idx"].unique()))
+    diner_idxs = sorted(list(diner["diner_idx"].unique()))
     reviewer_ids = sorted(list(review["reviewer_id"].unique()))
 
     num_diners = len(diner_idxs)

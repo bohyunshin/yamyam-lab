@@ -7,10 +7,11 @@ from torch import optim
 import numpy as np
 
 from loss.custom import svd_loss
-from evaluation.metric import ranking_metrics_at_k
+from evaluation.metric import ranking_metrics_at_k, ranked_precision
 from tools.parse_args import parse_args
 from tools.logger import setup_logger
-from tools.utils import convert_tensor
+from tools.utils import convert_tensor, get_user_locations
+from tools.candidate import get_diner_nearby_candidates
 
 # set cpu or cuda for default option
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -44,18 +45,22 @@ class SVDWithBias(nn.Module):
         output = (embed_user * embed_item).sum(axis=1) + user_bias.squeeze() + item_bias.squeeze() + self.mu # batch_size * 1
         return output
 
-    def recommend(self, X_train, X_val, top_K = [3, 5, 7, 10, 20], filter_already_liked=True):
+    def recommend(self, X_train, X_val, nearby_candidates, top_K = [3, 5, 7, 10, 20], filter_already_liked=True):
 
         self.map = 0.
         self.ndcg = 0.
 
         train_liked = convert_tensor(X_train, dict)
         val_liked = convert_tensor(X_val, list)
+        user_locations = get_user_locations(X_val)
         res = {}
-        metric_at_K = {k:{"map":0, "ndcg":0, "count":0} for k in top_K}
+        metric_at_K = {k:{"map":0, "ndcg":0, "count":0, "ranked_prec":0} for k in top_K}
         for user in range(self.num_users):
             item_idx = torch.arange(self.num_items)
             user_idx = torch.tensor([user]).repeat(self.num_items)
+
+            # diner_ids visited by user in validation dataset
+            locations = user_locations[user]
 
             # calculate one user's predicted scores for all item_ids
             with torch.no_grad():
@@ -72,11 +77,26 @@ class SVDWithBias(nn.Module):
             for K in top_K:
                 if len(val_liked_item_id) < K:
                     continue
+
+                # recommendations for all item pools
                 pred_liked_item_id = torch.topk(scores, k=K).indices.detach().cpu().numpy()
                 metric = ranking_metrics_at_k(val_liked_item_id, pred_liked_item_id)
                 metric_at_K[K]["map"] += metric["ap"]
                 metric_at_K[K]["ndcg"] += metric["ndcg"]
                 metric_at_K[K]["count"] += 1
+
+                for location in locations:
+                    # filter only near diner
+                    near_diner = np.array(nearby_candidates[location])
+                    near_diner_score = np.array([scores[i].item() for i in near_diner])
+
+                    # sort indices using predicted score
+                    indices = np.argsort(near_diner_score)[::-1]
+                    pred_near_liked_item_id = near_diner[indices][:K]
+                    # pred_near_liked_item_id = torch.topk(scores_cp, k=K).indices.detach().cpu().numpy()
+                    metric_at_K[K]["ranked_prec"] += ranked_precision(location, pred_near_liked_item_id)
+
+
 
                 # store recommendation result when K=20
                 if K == 20:
@@ -84,6 +104,7 @@ class SVDWithBias(nn.Module):
         for K in top_K:
             metric_at_K[K]["map"] /= metric_at_K[K]["count"]
             metric_at_K[K]["ndcg"] /= metric_at_K[K]["count"]
+            metric_at_K[K]["ranked_prec"] /= X_val.shape[0]
         self.metric_at_K = metric_at_K
         return res
 
@@ -159,18 +180,29 @@ if __name__ == "__main__":
             logger.info(f"Train Loss: {tr_loss}")
             logger.info(f"Validation Loss: {val_loss}")
 
-            # todo: calculate ndcg, map at every epoch
+            # get near 1km diner_ids
+            nearby_candidates = get_diner_nearby_candidates(max_distance_km=1)
+            # convert diner_ids
+            diner_mapping = data["diner_mapping"]
+            nearby_candidates_mapping = {}
+            for ref_id, nearby_id in nearby_candidates.items():
+                nearby_id_mapping = [diner_mapping[diner_id] for diner_id in nearby_id]
+                nearby_candidates_mapping[diner_mapping[ref_id]] = nearby_id_mapping
+
             recommendations = model.recommend(
                 X_train=data["X_train"],
                 X_val=data["X_val"],
+                nearby_candidates=nearby_candidates_mapping,
                 filter_already_liked=True
             )
             for K in model.metric_at_K.keys():
                 map = model.metric_at_K[K]["map"]
                 ndcg = model.metric_at_K[K]["ndcg"]
+                ranked_prec = model.metric_at_K[K]["ranked_prec"]
                 count = model.metric_at_K[K]["count"]
                 logger.info(f"maP@{K}: {map} with {count} users out of all {model.num_users} users")
                 logger.info(f"ndcg@{K}: {ndcg} with {count} users out of all {model.num_users} users")
+                logger.info(f"ranked precision@{K}: {ranked_prec}")
 
             if best_loss > val_loss:
                 prev_best_loss = best_loss

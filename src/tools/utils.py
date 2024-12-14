@@ -18,3 +18,13 @@ def convert_tensor(ts, structure):
         else:
             res[reviewer_id].append(diner_id)
     return res
+
+def get_user_locations(ts):
+    """
+    ts: torch.tensor (n x 2)
+        Columns should be matched with (diner_id, reviewer_id)
+    """
+    res = defaultdict(list)
+    for (diner_id, reviewer_id) in ts:
+        res[reviewer_id.item()].append(diner_id.item())
+    return res
