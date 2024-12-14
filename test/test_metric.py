@@ -48,3 +48,10 @@ def test_ranked_prec():
     expected_ranked_prec = 1/4
 
     np.testing.assert_almost_equal(ranked_prec, expected_ranked_prec)
+
+    reco_items = np.array([0, 1, 2, 3])
+    ranked_prec = ranked_precision(liked_items, reco_items)
+
+    expected_ranked_prec = 0
+
+    np.testing.assert_almost_equal(ranked_prec, expected_ranked_prec)

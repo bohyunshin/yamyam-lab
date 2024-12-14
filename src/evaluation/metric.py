@@ -6,7 +6,7 @@ def ranked_precision(liked_item: int, reco_items: NDArray):
     K = len(reco_items)
     for i,item in enumerate(reco_items):
         if liked_item == item:
-            return 1 / (K - (K - (i + 1)))
+            return (K - i) / K
     return 0
 
 
