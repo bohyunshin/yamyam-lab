@@ -1,6 +1,6 @@
 import numpy as np
 
-from evaluation.metric import ranking_metrics_at_k
+from evaluation.metric import ranking_metrics_at_k, ranked_precision
 
 
 def test_map_ndcg_y_binary():
@@ -39,3 +39,19 @@ def test_map_ndcg_y_rating():
     expected_map = (1 + 1 + 1) / K
     np.testing.assert_almost_equal(metric["ndcg"], expected_ndcg)
     np.testing.assert_almost_equal(metric["ap"], expected_map)
+
+def test_ranked_prec():
+    liked_items = 100
+    reco_items = np.array([0, 1, 2, 100])
+    ranked_prec = ranked_precision(liked_items, reco_items)
+
+    expected_ranked_prec = 1/4
+
+    np.testing.assert_almost_equal(ranked_prec, expected_ranked_prec)
+
+    reco_items = np.array([0, 1, 2, 3])
+    ranked_prec = ranked_precision(liked_items, reco_items)
+
+    expected_ranked_prec = 0
+
+    np.testing.assert_almost_equal(ranked_prec, expected_ranked_prec)
