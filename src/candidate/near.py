@@ -12,7 +12,7 @@ DATA_PATH = os.path.join(
 )
 
 
-class GenerateNearCandidates:
+class NearCandidateGenerator:
     def __init__(self):
         diners = pd.read_csv(os.path.join(DATA_PATH, "diner/diner_df_20241211_yamyam.csv"))
         diner_ids = diners["diner_idx"].unique()
@@ -81,34 +81,7 @@ class GenerateNearCandidates:
 
         return max_distance_rad
 
-def get_diner_nearby_candidates(max_distance_km):
-    diners = pd.read_csv(os.path.join(DATA_PATH, "diner/diner_df_20241211_yamyam.csv"))
-    diner_ids = diners["diner_idx"].unique()
-    mapping_diner_idx = {i:id for i,id in enumerate(diner_ids) }
-
-    # Convert latitude and longitude to radians for KDTree
-    diner_coords = np.radians([(r[1]["diner_lat"], r[1]["diner_lon"]) for r in diners.iterrows()])
-
-    # Earth's radius in kilometers
-    earth_radius_km = 6371
-
-    # Create KDTree
-    tree = KDTree(diner_coords)
-
-    # Convert max_distance_km to radians
-    max_distance_rad = max_distance_km / earth_radius_km
-
-    # For each of diner, query KDTree for diners within max_distance_rad
-    result = {}
-    for i,diner_coord in enumerate(diner_coords):
-        ref_diner_id = mapping_diner_idx[i]
-        # Note: `indices` include referenced diner itself
-        indices = tree.query_ball_point(diner_coord, max_distance_rad)
-        result[ref_diner_id] = [mapping_diner_idx[id] for id in indices]
-
-    return result
-
 if __name__ == "__main__":
-    candidates = GenerateNearCandidates()
+    candidates = NearCandidateGenerator()
     tree = candidates.create_kd_tree()
     result = candidates.get_near_candidates_for_all_diners(kd_tree=tree, max_distance_km=1)
