@@ -17,8 +17,12 @@ class NearCandidateGenerator:
         diners = pd.read_csv(os.path.join(DATA_PATH, "diner/diner_df_20241211_yamyam.csv"))
         diner_ids = diners["diner_idx"].unique()
         self.mapping_diner_idx = {i:id for i,id in enumerate(diner_ids)}
+
         # Convert latitude and longitude to radians for KDTree
         self.diner_coords = np.radians([(r[1]["diner_lat"], r[1]["diner_lon"]) for r in diners.iterrows()])
+
+        # get kd tree
+        self.kd_tree = self.create_kd_tree()
 
     def create_kd_tree(self):
         # Create KDTree
@@ -27,7 +31,6 @@ class NearCandidateGenerator:
 
     def get_near_candidate(
             self,
-            kd_tree: KDTree,
             coord: NDArray,
             max_distance_km: int,
             is_radians: bool = True,
@@ -48,12 +51,11 @@ class NearCandidateGenerator:
         if is_radians is False:
             coord = np.radians(coord)
         max_distance_rad = self.get_max_distance_rad(max_distance_km)
-        near_diner_ids = kd_tree.query_ball_point(coord, max_distance_rad)
+        near_diner_ids = self.kd_tree.query_ball_point(coord, max_distance_rad)
         return near_diner_ids
 
     def get_near_candidates_for_all_diners(
             self,
-            kd_tree: KDTree,
             max_distance_km: int
     ):
         # For each of diner, query KDTree for diners within max_distance_rad
@@ -63,7 +65,6 @@ class NearCandidateGenerator:
             ref_diner_id = self.mapping_diner_idx[i]
             # Note: `indices` include referenced diner itself
             near_diner_ids = self.get_near_candidate(
-                kd_tree=kd_tree,
                 coord=coord_rad,
                 max_distance_km=max_distance_km,
                 is_radians=True,
@@ -83,5 +84,4 @@ class NearCandidateGenerator:
 
 if __name__ == "__main__":
     candidates = NearCandidateGenerator()
-    tree = candidates.create_kd_tree()
-    result = candidates.get_near_candidates_for_all_diners(kd_tree=tree, max_distance_km=1)
+    result = candidates.get_near_candidates_for_all_diners(max_distance_km=1)
