@@ -147,8 +147,9 @@ def load_and_prepare_lightgbm_data(
 
     # target value 생성
     review["target"] = np.where(
-        (review["real_good_review_percent"] > review["real_bad_review_percent"])
-        & (review["reviewer_review_score"] - review["reviewer_avg"] >= 0.5),
+        (review["reviewer_avg"] > 3.5)
+        & (review["reviewer_review_score"] - review["reviewer_avg"] > -1)
+        & (review["reviewer_review_score"] - review["reviewer_avg"] < 1),
         1,
         0,
     )
