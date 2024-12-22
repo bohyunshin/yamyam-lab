@@ -92,29 +92,48 @@ class Node2Vec(BaseEmbedding):
         self.embedding = Embedding(self.num_nodes, embedding_dim,
                                    sparse=sparse)
 
-        self.reset_parameters()
-
         self.d_graph = precompute_probabilities(
             graph=graph,
             p=p,
             q=q,
         )
 
-    def reset_parameters(self):
-        r"""Resets all learnable parameters of the module."""
-        self.embedding.reset_parameters()
-
     def forward(self, batch: Tensor) -> Tensor:
-        """Returns the embeddings for the nodes in :obj:`batch`."""
+        """
+        Dummy forward pass which actually does not do anything.
+
+        Args:
+            batch (Tensor): A batch of node ids.
+
+        Returns (Tensor):
+            A batch of node embeddings.
+        """
         emb = self.embedding.weight
         return emb if batch is None else emb[batch]
 
     def loader(self, **kwargs) -> DataLoader:
+        """
+        Node id generator in pytorch dataloader type.
+
+        Returns (DataLoader):
+            DataLoader used when training model.
+        """
         return DataLoader(torch.tensor([node for node in self.graph.nodes()]), collate_fn=self.sample,
                           **kwargs)
 
     @torch.jit.export
     def pos_sample(self, batch: Tensor) -> Tensor:
+        """
+        For each of node id, generate biased random walk using `generate_walks` function.
+        Based on transition probabilities information (`d_graph`), perform biased random walks.
+
+        Args:
+            batch (Tensor): A batch of node ids which are starting points in each biased random walk.
+
+        Returns (Tensor):
+            Generated biased random walks. Number of random walks are based on walks_per_node,
+            walk_length, and context size. Note that random walks are concatenated row-wise.
+        """
         batch = batch.repeat(self.walks_per_node)
         rw = generate_walks(
             node_ids=batch.detach().cpu().numpy(),
@@ -130,6 +149,17 @@ class Node2Vec(BaseEmbedding):
 
     @torch.jit.export
     def neg_sample(self, batch: Tensor) -> Tensor:
+        """
+        Sample negative with uniform sampling.
+        In word2vec objective function, to reduce computation burden, negative sampling
+        is performed and approximate denominator of probability.
+
+        Args:
+            batch (Tensor): A batch of node ids.
+
+        Returns (Tensor):
+            Negative samples for each of node ids.
+        """
         batch = batch.repeat(self.walks_per_node * self.num_negative_samples)
 
         rw = torch.randint(self.num_nodes, (batch.size(0), self.walk_length),
@@ -144,13 +174,36 @@ class Node2Vec(BaseEmbedding):
 
     @torch.jit.export
     def sample(self, batch: Union[List[int], Tensor]) -> Tuple[Tensor, Tensor]:
+        """
+        Wrapper function for positive, negative sampling.
+        This function is used as `collate_fn` in pytorch dataloader.
+
+        Args:
+            batch (Union[List[int], Tensor]): A batch of node ids.
+
+        Returns (Tuple[Tensor, Tensor]):
+            Positive, negative samples.
+        """
         if not isinstance(batch, Tensor):
             batch = torch.tensor(batch)
         return self.pos_sample(batch), self.neg_sample(batch)
 
     @torch.jit.export
-    def loss(self, pos_rw: Tensor, neg_rw: Tensor) -> Tensor:
-        r"""Computes the loss given positive and negative random walks."""
+    def loss(
+            self,
+            pos_rw: Tensor,
+            neg_rw: Tensor
+        ) -> Tensor:
+        """
+        Computes word2vec skip-gram based loss.
+
+        Args:
+             pos_rw (Tensor): Node ids of positive samples
+             neg_rw (Tensor): Node ids of negative samples
+
+        Returns (Tensor):
+            Calculated loss.
+        """
         # Positive loss.
         start, rest = pos_rw[:, 0], pos_rw[:, 1:].contiguous()
 

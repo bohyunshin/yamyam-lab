@@ -23,17 +23,20 @@ def generate_walks(
     """
     Generates the random walks which will be used as the skip-gram input.
 
-    :return: List of walks. Each walk is a list of nodes.
+    Args:
+        node_ids (Union[List[int], NDArray]): Node id as starting point.
+        d_graph (Dict[str, Any]): Precomputed transition probabilities based
+            on parameter `p`, `q`, and edge weights
+        walk_length (int): Length of the random walks.
+        num_walks (int): Number of biased random walks for each of node id
+
+    Returns (Tensor):
+        Concatenated random walks in Tensor.
     """
 
     walks = list()
 
-    # pbar = tqdm(total=num_walks, desc=f"Generating walks")
-
     for n_walk in range(num_walks):
-
-        # Update progress bar
-        # pbar.update(1)
 
         # Start a random walk from input node
         for source in node_ids:
@@ -65,8 +68,6 @@ def generate_walks(
 
             walks.append(walk)
 
-    # pbar.close()
-
     return torch.tensor(walks)
 
 def precompute_probabilities(
@@ -76,6 +77,14 @@ def precompute_probabilities(
 ) -> Dict[str, Any]:
     """
     Precomputes transition probabilities for each node.
+
+    Args:
+        graph (nx.Graph): Networkx graph containing edge relationship.
+        p (float): BFS related hyperparameter.
+        q (float): DFS related hyperparameter.
+
+    Returns (Dict[str, Any]):
+        Dictionary of keys with node id and values with transition probabilities.
     """
     d_graph = defaultdict(dict)
     # initialize transition matrix
@@ -125,24 +134,3 @@ def precompute_probabilities(
         # Save neighbors preserving order
         d_graph[source][TransitionKey.NEIGHBORS.value] = list(graph.neighbors(source))
     return d_graph
-
-# def generate_walks(self, node_ids: List[int]):
-#     flatten = lambda l: [item for sublist in l for item in sublist]
-#
-#     # Split num_walks for each worker
-#     num_walks_lists = np.array_split(range(self.walks_per_node), self.workers)
-#
-#     walk_results = Parallel(n_jobs=self.workers, temp_folder=self.temp_folder)(
-#         delayed(generate_walks)(
-#             node_ids=node_ids,
-#             d_graph=self.d_graph,
-#             walk_length=self.walk_length,
-#             num_walks=len(num_walks),
-#             cpu_num=cpu_num
-#         ) for
-#         cpu_num, num_walks
-#         in enumerate(num_walks_lists, 1))
-#
-#     walks = flatten(walk_results)
-#
-#     return walks

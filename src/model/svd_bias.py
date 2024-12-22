@@ -1,10 +1,12 @@
 import copy
 import traceback
+from typing import Dict, List
 
 import torch
 import torch.nn as nn
-from torch import optim
+from torch import optim, Tensor
 import numpy as np
+from numpy.typing import NDArray
 
 from candidate.near import NearCandidateGenerator
 from loss.custom import svd_loss
@@ -12,7 +14,6 @@ from evaluation.metric import ranking_metrics_at_k, ranked_precision
 from tools.parse_args import parse_args
 from tools.logger import setup_logger
 from tools.utils import convert_tensor, get_user_locations
-# from tools.candidate import get_diner_nearby_candidates
 
 # set cpu or cuda for default option
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -21,7 +22,19 @@ torch.set_default_device(device.type)
 
 class SVDWithBias(nn.Module):
 
-    def __init__(self, num_users, num_items, num_factors, **kwargs):
+    def __init__(
+            self,
+            num_users: int,
+            num_items: int,
+            num_factors: int,
+            **kwargs
+        ):
+        """
+        Args:
+            num_users (int): number of unique users across train / validation dataset.
+            num_items (int): number of unique items (diners) across train / validation dataset.
+            num_factors (int): dimension size of embedding vector.
+        """
         super(SVDWithBias, self).__init__()
 
         self.num_users = num_users
@@ -38,7 +51,24 @@ class SVDWithBias(nn.Module):
         nn.init.xavier_normal_(self.user_bias.weight)
         nn.init.xavier_normal_(self.item_bias.weight)
 
-    def forward(self, user_idx, item_idx):
+    def forward(
+            self,
+            user_idx: Tensor,
+            item_idx: Tensor
+        ) -> Tensor:
+        """
+        Forward pass for SVD Bias model.
+        Predicts user's rating related with an item id.
+        This forward pass decomposes rating value into product of user embedding and item embedding
+        with each of bias included.
+
+        Args:
+            user_idx (Tensor): User id.
+            item_idx (Tensor): Item id.
+
+        Returns (Tensor):
+            Predicted scores of each user related with item ids.
+        """
         embed_user = self.embed_user(user_idx) # batch_size * num_factors
         embed_item = self.embed_item(item_idx) # batch_size * num_factors
         user_bias = self.user_bias(user_idx) # batch_size * 1
@@ -46,7 +76,38 @@ class SVDWithBias(nn.Module):
         output = (embed_user * embed_item).sum(axis=1) + user_bias.squeeze() + item_bias.squeeze() + self.mu # batch_size * 1
         return output
 
-    def recommend(self, X_train, X_val, nearby_candidates, top_K = [3, 5, 7, 10, 20], filter_already_liked=True):
+    def recommend(
+            self,
+            X_train: Tensor,
+            X_val: Tensor,
+            nearby_candidates: Dict[int, List[int]],
+            top_K: List[int] = [3, 5, 7, 10, 20],
+            filter_already_liked: bool = True
+        ) -> Dict[int, NDArray]:
+        """
+        Recommend item to each user based on predicted scores.
+        Recommendations on two ways are performed.
+         - Recommend items to each user not considering user's locality.
+           -> Calculates NDCG, mAP metric.
+         - Recommend items to each user considering user's locality.
+           -> Calculates ranked precision metric.
+        Second method gets candidates from `NearCandidateGenerator`,
+        which filters diners within x km distance given user's latitude and longitude.
+
+        Args:
+            X_train (Tensor): Dataset used when training model.
+                When recommendation, this is used when filtering items that already liked by user.
+            X_val (Tensor): Dataset used when validation model.
+            nearby_candidates (Dict[int, List[int]]): Each key is reference diner, and
+                corresponding value is a list of diners within x km distance with reference diner.
+            top_K (List[int]): A list of number of items to recommend to user.
+            filter_already_liked (bool): Whether to filter items that already liked
+                by user in train dataset.
+
+        Returns (Dict[int, NDArray]):
+            Defined metric will be stored in class attribute `metric_at_k`. This function returns
+            recommendation item list at `20` of each user.
+        """
 
         self.map = 0.
         self.ndcg = 0.

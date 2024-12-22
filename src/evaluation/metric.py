@@ -1,8 +1,12 @@
+from typing import Dict
 import numpy as np
 from numpy.typing import NDArray
 
 
-def ranked_precision(liked_item: int, reco_items: NDArray):
+def ranked_precision(
+        liked_item: int,
+        reco_items: NDArray
+) -> float:
     K = len(reco_items)
     for i,item in enumerate(reco_items):
         if liked_item == item:
@@ -11,8 +15,10 @@ def ranked_precision(liked_item: int, reco_items: NDArray):
 
 
 def ranking_metrics_at_k(
-    liked_items: NDArray, reco_items: NDArray, liked_items_score: NDArray = None
-) -> dict[str, float]:
+    liked_items: NDArray,
+    reco_items: NDArray,
+    liked_items_score: NDArray = None
+) -> Dict[str, float]:
     """
     Calculates ndcg, average precision (aP), hit, and recall for `one user`.
     If you want to derive ndcg, map for n users, you should average them over n.

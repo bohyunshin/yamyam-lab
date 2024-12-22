@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List, Dict, Any
 import os
 import pandas as pd
 import numpy as np
@@ -21,10 +21,18 @@ torch.set_default_device(device.type)
 
 
 class TorchData(Dataset):
-    def __init__(self, X, y):
+    def __init__(
+            self,
+            X: Tensor,
+            y: Tensor
+        ):
         """
-        X: torch.tensor
-        y: torch.tensor
+        Make Dataset object especially for pytorch DataLoader.
+        This Dataset class will be input for pytorch DataLoader.
+
+        Args:
+            X (Tensor): input features.
+            y (Tensor): target features.
         """
         assert X.shape[0] == y.shape[0]
         self.X = X
@@ -37,22 +45,31 @@ class TorchData(Dataset):
         return self.X[idx], self.y[idx]
 
 
-def train_test_split_stratify(test_size,
-                              min_reviews,
-                              X_columns=["diner_idx", "reviewer_id"],
-                              y_columns=["reviewer_review_score"],
-                              random_state=42,
-                              stratify="reviewer_id",
-                              pg_model=False):
+def train_test_split_stratify(
+        test_size: float,
+        min_reviews: int,
+        X_columns: List[str] = ["diner_idx", "reviewer_id"],
+        y_columns: List[str] = ["reviewer_review_score"],
+        random_state: int = 42,
+        stratify: str = "reviewer_id",
+        pg_model: bool = False
+    ) -> Dict[str, Any]:
     """
-    test_size: ratio of test dataset
-    min_reviews: minimum number of reviews for each reviewer
-    X_columns: column names for model feature
-    y_columns: column names for target value
-    use_columns: columns to use in review data
-    random_state: random seed for reproducibility
-    stratify: column to stratify review data
-    pg_model: indicator whether using torch_geometric model or not
+    Split review data stratifying by `stratify` column.
+    This function aims for using consistent train / validation dataset across coders
+    and ensures that each reviewer in validation is included in train dataset.
+
+    Args:
+        test_size (float): ratio of test dataset.
+        min_reviews (int): minimum number of reviews for each reviewer.
+        X_columns (List[str]): column names for model feature.
+        y_columns (List[str]): column names for target value.
+        random_state (int): random seed for reproducibility.
+        stratify (str): reference column when stratifying review data.
+        pg_model (bool): indicator whether using torch_geometric model or not.
+
+    Returns (Dict[str, Any]):
+        Dataset, statistics, and mapping information which could be used when training model.
     """
     # load data
     review_1 = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241204_part_1.csv"))
@@ -110,7 +127,29 @@ def train_test_split_stratify(test_size,
     }
 
 
-def prepare_torch_dataloader(X_train, y_train, X_val, y_val, batch_size=128, random_state=42):
+def prepare_torch_dataloader(
+        X_train: Tensor,
+        y_train: Tensor,
+        X_val: Tensor,
+        y_val: Tensor,
+        batch_size: int = 128,
+        random_state: int = 42
+    ) -> Tuple[DataLoader, DataLoader]:
+    """
+    Make train / validation pytorch DataLoader.
+    This function gets input from `train_test_split_stratify` function.
+
+    Args:
+        X_train (Tensor): input features used when training model.
+        y_train (Tensor): target features used when training model.
+        X_val (Tensor): input features used when validating model.
+        y_val (Tensor): target features used when validating model.
+        batch_size (int): batch size for mini-batch gradient descent.
+        random_state (int): random seed for reproducibility.
+
+    Returns (Tuple[DataLoader, DataLoader]):
+        Train / validation dataloader.
+    """
     seed = torch.Generator(device=device.type).manual_seed(random_state)
 
     train_dataset = TorchData(X_train, y_train)
@@ -121,7 +160,26 @@ def prepare_torch_dataloader(X_train, y_train, X_val, y_val, batch_size=128, ran
     return train_dataloader, val_dataloader
 
 
-def prepare_torch_geometric_data(X_train, X_val, num_diners, num_reviewers):
+def prepare_torch_geometric_data(
+        X_train: Tensor,
+        X_val: Tensor,
+        num_diners: int,
+        num_reviewers: int
+    ) -> Tuple[Data, Data]:
+    """
+    Make train / validation Dataset especially for pytorch geometric package.
+    This function gets input from `train_test_split_stratify` function.
+    Note that currently, only edge relation info is integrated into data
+
+    Args:
+        X_train (Tensor): input features used when training pytorch geometric model.
+        X_val (Tensor): input features used when validating pytorch geometric model.
+        num_diners (int): number of unique diners.
+        num_reviewers (int): number of unique reviewers.
+
+    Returns (Tuple[Data, Data]):
+        Train / validation pytorch geometric dataset.
+    """
     # check feature data has only two columns, e.g., diner_id and reviewer_id
     assert X_train.shape[1] == 2
     assert X_val.shape[1] == 2
@@ -148,8 +206,18 @@ def prepare_torch_geometric_data(X_train, X_val, num_diners, num_reviewers):
 
 def prepare_networkx_data(
         X_train: Tensor,
-        X_val: Tensor,
+        X_val: Tensor
 ) -> Tuple[nx.Graph, nx.Graph]:
+    """
+    Make train / validation dataset in nx.Graph object type.
+
+    Args:
+        X_train (Tensor): input features used when training model.
+        X_val (Tensor): input features used when validating model.
+
+    Returns (Tuple[nx.Graph, nx.Graph]):
+        Train / validation dataset in nx.Graph object type.
+    """
     train_graph = nx.Graph()
     val_graph = nx.Graph()
 
