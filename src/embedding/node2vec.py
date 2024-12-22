@@ -23,7 +23,7 @@ class Node2Vec(BaseEmbedding):
             Make random walks using explicit function.
         - data structure: Uses networkx.Graph.
 
-    Original doc string starting here.
+    Original doc string starts here.
     ----------------------------------
     The Node2Vec model from the
     `"node2vec: Scalable Feature Learning for Networks"
@@ -54,8 +54,6 @@ class Node2Vec(BaseEmbedding):
             use for each positive sample. (default: :obj:`1`)
         sparse (bool, optional): If set to :obj:`True`, gradients w.r.t. to the
             weight matrix will be sparse. (default: :obj:`False`)
-        temp_folder (str, optional): Temporary folder to save outputs from
-            parallel job. (default: :obj:`.`)
     """
     def __init__(
         self,
@@ -71,7 +69,6 @@ class Node2Vec(BaseEmbedding):
         q: float = 1.0,
         num_negative_samples: int = 1,
         sparse: bool = False,
-        temp_folder: str = ".",
     ):
         super().__init__(
             user_ids=user_ids,
@@ -85,7 +82,6 @@ class Node2Vec(BaseEmbedding):
         self.p = p
         self.q = q
         self.num_negative_samples = num_negative_samples
-        self.temp_folder = temp_folder
         self.EPS = 1e-15
         self.num_nodes = num_nodes
 
