@@ -20,7 +20,7 @@ def parse_args():
     parser.add_argument("--context_size", type=int, default=10)
     parser.add_argument("--walks_per_node", type=int, default=10)
     parser.add_argument("--p", type=int, default=1)
-    parser.add_argument("--q", type=int, default=1)
+    parser.add_argument("--q", type=float, default=1)
     parser.add_argument("--num_negative_samples", type=int, default=1)
     parser.add_argument("--sparse", action="store_true")
     return parser.parse_args()
