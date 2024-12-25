@@ -56,7 +56,7 @@ class BaseEmbedding(nn.Module):
             X_train: Tensor,
             X_val: Tensor,
             nearby_candidates: Dict[int, list],
-            top_K = [3, 5, 7, 10, 20],
+            top_K = [3, 5, 7, 10, 20, 100, 200, 300, 400, 500],
             filter_already_liked=True
         ) -> Dict[int, Any]:
         user_embeds = self.embedding(self.user_ids)
@@ -69,7 +69,7 @@ class BaseEmbedding(nn.Module):
         train_liked = convert_tensor(X_train, list)
         val_liked = convert_tensor(X_val, list)
         res = {}
-        metric_at_K = {k: {"map": 0, "ndcg": 0, "count": 0, "ranked_prec": 0} for k in top_K}
+        metric_at_K = {k: {"map": 0, "ndcg": 0, "count": 0, "ranked_prec": 0, "near_candidate_recall": 0} for k in top_K}
 
         # filter item_id in train dataset
         if filter_already_liked:
@@ -88,14 +88,13 @@ class BaseEmbedding(nn.Module):
             locations = val_liked[user_id]
 
             for K in top_K:
-                if len(val_liked_item_id) < K:
-                    continue
                 score = scores[user_id - self.num_diners]
                 pred_liked_item_id = torch.topk(score, k=K).indices.detach().cpu().numpy()
-                metric = ranking_metrics_at_k(val_liked_item_id, pred_liked_item_id)
-                metric_at_K[K]["map"] += metric["ap"]
-                metric_at_K[K]["ndcg"] += metric["ndcg"]
-                metric_at_K[K]["count"] += 1
+                if len(val_liked_item_id) >= K:
+                    metric = ranking_metrics_at_k(val_liked_item_id, pred_liked_item_id)
+                    metric_at_K[K]["map"] += metric["ap"]
+                    metric_at_K[K]["ndcg"] += metric["ndcg"]
+                    metric_at_K[K]["count"] += 1
 
                 for location in locations:
                     # filter only near diner
@@ -106,6 +105,8 @@ class BaseEmbedding(nn.Module):
                     indices = np.argsort(near_diner_score)[::-1]
                     pred_near_liked_item_id = near_diner[indices][:K]
                     metric_at_K[K]["ranked_prec"] += ranked_precision(location, pred_near_liked_item_id)
+                    # ranked_prec value higher than 0 indicates hitting of true y
+                    metric_at_K[K]["near_candidate_recall"] += (metric_at_K[K]["ranked_prec"] != 0.)
 
                 # store recommendation result when K=20
                 if K == 20:
@@ -114,5 +115,6 @@ class BaseEmbedding(nn.Module):
             metric_at_K[K]["map"] /= metric_at_K[K]["count"]
             metric_at_K[K]["ndcg"] /= metric_at_K[K]["count"]
             metric_at_K[K]["ranked_prec"] /= X_val.shape[0]
+            metric_at_K[K]["near_candidate_recall"] /= X_val.shape[0]
         self.metric_at_K = metric_at_K
         return res

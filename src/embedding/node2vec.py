@@ -316,22 +316,29 @@ if __name__ == "__main__":
             maps = []
             ndcgs = []
             ranked_precs = []
+            recalls = []
             for K in model.metric_at_K.keys():
                 map = round(model.metric_at_K[K]["map"], 5)
                 ndcg = round(model.metric_at_K[K]["ndcg"], 5)
                 ranked_prec = round(model.metric_at_K[K]["ranked_prec"], 5)
+                near_candidate_recall = round(model.metric_at_K[K]["near_candidate_recall"], 5)
                 count = model.metric_at_K[K]["count"]
-                logger.info(f"maP@{K}: {map} with {count} users out of all {model.num_users} users")
-                logger.info(f"ndcg@{K}: {ndcg} with {count} users out of all {model.num_users} users")
-                logger.info(f"ranked_prec@{K}: {ranked_prec}")
+                if K <= 20:
+                    logger.info(f"maP@{K}: {map} with {count} users out of all {model.num_users} users")
+                    logger.info(f"ndcg@{K}: {ndcg} with {count} users out of all {model.num_users} users")
+                    logger.info(f"ranked_prec@{K}: {ranked_prec}")
+                else:
+                    logger.info(f"near_candidate_recall@{K}: {near_candidate_recall}")
 
                 maps.append(str(map))
                 ndcgs.append(str(ndcg))
                 ranked_precs.append(str(ranked_prec))
+                recalls.append(str(near_candidate_recall))
 
             logger.info(f"map result: {'|'.join(maps)}")
             logger.info(f"ndcg result: {'|'.join(ndcgs)}")
             logger.info(f"ranked_prec result: {'|'.join(ranked_precs)}")
+            logger.info(f"near_candidate_recall result: {'|'.join(recalls)}")
         torch.save(model.state_dict(), "node2vec.pt")
 
         logger.info("successfully saved node2vec torch model")
