@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import List, Union, Tuple, Dict, Any
 import torch
 import numpy as np
+from numpy.typing import NDArray
 
 from torch import Tensor
 import torch.nn as nn
@@ -118,3 +119,21 @@ class BaseEmbedding(nn.Module):
             metric_at_K[K]["near_candidate_recall"] /= X_val.shape[0]
         self.metric_at_K = metric_at_K
         return res
+
+    def _recommend(
+            self,
+            user_id: Tensor,
+            already_liked_item_id: List[int],
+            latitude: float = None,
+            longitude: float = None,
+            top_k: int = 10,
+    ) -> Tuple[NDArray, NDArray]:
+        user_embed = self.embedding(user_id)
+        diner_embeds = self.embedding(self.diner_ids)
+        score = torch.mm(user_embed, diner_embeds.t()).squeeze(0)
+        for diner_idx in already_liked_item_id:
+            score[diner_idx] = -float('inf')
+        top_k = torch.topk(score, k=top_k)
+        pred_liked_item_id = top_k.indices.detach().cpu().numpy()
+        pred_liked_item_score = top_k.values.detach().cpu().numpy()
+        return pred_liked_item_id, pred_liked_item_score

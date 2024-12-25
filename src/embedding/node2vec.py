@@ -1,5 +1,7 @@
 from typing import List, Tuple, Union
 import networkx as nx
+import pickle
+import os
 
 import torch
 from torch import Tensor
@@ -68,6 +70,7 @@ class Node2Vec(BaseEmbedding):
         p: float = 1.0,
         q: float = 1.0,
         num_negative_samples: int = 1,
+        inference: bool = False,
     ):
         super().__init__(
             user_ids=user_ids,
@@ -86,11 +89,12 @@ class Node2Vec(BaseEmbedding):
 
         self.embedding = Embedding(self.num_nodes, embedding_dim)
 
-        self.d_graph = precompute_probabilities(
-            graph=graph,
-            p=p,
-            q=q,
-        )
+        if inference is True:
+            self.d_graph = precompute_probabilities(
+                graph=graph,
+                p=p,
+                q=q,
+            )
 
     def forward(self, batch: Tensor) -> Tensor:
         """
@@ -257,6 +261,11 @@ if __name__ == "__main__":
             X_train=data["X_train"],
             X_val=data["X_val"],
         )
+
+        # for qualitative eval
+        pickle.dump(data, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_obj.pkl"), "wb"))
+        pickle.dump(train_graph, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "train_graph_obj.pkl"), "wb"))
+
         num_nodes = data["num_users"] + data["num_diners"]
         model = Node2Vec(
             user_ids=torch.tensor(list(data["user_mapping"].values())),
@@ -290,49 +299,49 @@ if __name__ == "__main__":
         loader = model.loader(batch_size=args.batch_size, shuffle=True, generator=seed)
         for epoch in range(args.epochs):
             total_loss = 0
-            for pos_rw, neg_rw in loader:
-                optimizer.zero_grad()
-                loss = model.loss(pos_rw.to(device), neg_rw.to(device))
-                loss.backward()
-                optimizer.step()
-                total_loss += loss.item()
-            total_loss /= len(loader)
+            # for pos_rw, neg_rw in loader:
+            #     optimizer.zero_grad()
+            #     loss = model.loss(pos_rw.to(device), neg_rw.to(device))
+            #     loss.backward()
+            #     optimizer.step()
+            #     total_loss += loss.item()
+            # total_loss /= len(loader)
 
             logger.info(f"epoch {epoch}: train loss {total_loss:.4f}")
 
-            recommendations = model.recommend(
-                X_train=data["X_train"],
-                X_val=data["X_val"],
-                nearby_candidates=nearby_candidates_mapping,
-                filter_already_liked=True
-            )
-
-            maps = []
-            ndcgs = []
-            ranked_precs = []
-            recalls = []
-            for K in model.metric_at_K.keys():
-                map = round(model.metric_at_K[K]["map"], 5)
-                ndcg = round(model.metric_at_K[K]["ndcg"], 5)
-                ranked_prec = round(model.metric_at_K[K]["ranked_prec"], 5)
-                near_candidate_recall = round(model.metric_at_K[K]["near_candidate_recall"], 5)
-                count = model.metric_at_K[K]["count"]
-                if K <= 20:
-                    logger.info(f"maP@{K}: {map} with {count} users out of all {model.num_users} users")
-                    logger.info(f"ndcg@{K}: {ndcg} with {count} users out of all {model.num_users} users")
-                    logger.info(f"ranked_prec@{K}: {ranked_prec}")
-                else:
-                    logger.info(f"near_candidate_recall@{K}: {near_candidate_recall}")
-
-                maps.append(str(map))
-                ndcgs.append(str(ndcg))
-                ranked_precs.append(str(ranked_prec))
-                recalls.append(str(near_candidate_recall))
-
-            logger.info(f"map result: {'|'.join(maps)}")
-            logger.info(f"ndcg result: {'|'.join(ndcgs)}")
-            logger.info(f"ranked_prec result: {'|'.join(ranked_precs)}")
-            logger.info(f"near_candidate_recall result: {'|'.join(recalls)}")
+            # recommendations = model.recommend(
+            #     X_train=data["X_train"],
+            #     X_val=data["X_val"],
+            #     nearby_candidates=nearby_candidates_mapping,
+            #     filter_already_liked=True
+            # )
+            #
+            # maps = []
+            # ndcgs = []
+            # ranked_precs = []
+            # recalls = []
+            # for K in model.metric_at_K.keys():
+            #     map = round(model.metric_at_K[K]["map"], 5)
+            #     ndcg = round(model.metric_at_K[K]["ndcg"], 5)
+            #     ranked_prec = round(model.metric_at_K[K]["ranked_prec"], 5)
+            #     near_candidate_recall = round(model.metric_at_K[K]["near_candidate_recall"], 5)
+            #     count = model.metric_at_K[K]["count"]
+            #     if K <= 20:
+            #         logger.info(f"maP@{K}: {map} with {count} users out of all {model.num_users} users")
+            #         logger.info(f"ndcg@{K}: {ndcg} with {count} users out of all {model.num_users} users")
+            #         logger.info(f"ranked_prec@{K}: {ranked_prec}")
+            #     else:
+            #         logger.info(f"near_candidate_recall@{K}: {near_candidate_recall}")
+            #
+            #     maps.append(str(map))
+            #     ndcgs.append(str(ndcg))
+            #     ranked_precs.append(str(ranked_prec))
+            #     recalls.append(str(near_candidate_recall))
+            #
+            # logger.info(f"map result: {'|'.join(maps)}")
+            # logger.info(f"ndcg result: {'|'.join(ndcgs)}")
+            # logger.info(f"ranked_prec result: {'|'.join(ranked_precs)}")
+            # logger.info(f"near_candidate_recall result: {'|'.join(recalls)}")
 
             torch.save(model.state_dict(), "node2vec.pt")
 

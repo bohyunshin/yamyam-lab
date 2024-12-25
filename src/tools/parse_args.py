@@ -23,3 +23,11 @@ def parse_args():
     parser.add_argument("--q", type=float, default=1)
     parser.add_argument("--num_negative_samples", type=int, default=1)
     return parser.parse_args()
+
+
+def parse_args_eval():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_obj_path", type=str)
+    parser.add_argument("--model_path", type=str)
+    parser.add_argument("--embedding_dim", type=int)
+    return parser.parse_args()
