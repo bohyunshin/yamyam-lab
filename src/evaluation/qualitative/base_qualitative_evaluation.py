@@ -44,7 +44,7 @@ class BaseQualitativeEvaluation(ABC):
             latitude: float = None,
             longitude: float = None,
             top_k: int = 10,
-    ):
+    ) -> PrettyTable:
         user_id_mapping = self.user_mapping.get(user_id, None)
         if user_id_mapping is None:
             raise ValueError(f"No mapping for user {user_id}")
@@ -77,6 +77,4 @@ class BaseQualitativeEvaluation(ABC):
                     1 if diner_idx in val_liked_diners else 0
                 ]
             )
-
-        print(f"Recommendations for user {user_name}")
-        print(tb)
+        return tb

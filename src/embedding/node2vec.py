@@ -139,11 +139,6 @@ class Node2Vec(BaseEmbedding):
             num_walks=1,
         )
         return rw
-        # walks = []
-        # num_walks_per_rw = self.walk_length - (self.context_size - 1)
-        # for j in range(num_walks_per_rw):
-        #     walks.append(rw[:, j:j + self.context_size])
-        # return torch.cat(walks, dim=0)
 
     @torch.jit.export
     def neg_sample(self, batch: Tensor) -> Tensor:
@@ -165,11 +160,6 @@ class Node2Vec(BaseEmbedding):
         rw = torch.cat([batch.view(-1, 1), rw], dim=-1)
 
         return rw
-        # walks = []
-        # num_walks_per_rw = self.walk_length - (self.context_size - 1)
-        # for j in range(num_walks_per_rw):
-        #     walks.append(rw[:, j:j + self.context_size])
-        # return torch.cat(walks, dim=0)
 
     @torch.jit.export
     def sample(self, batch: Union[List[int], Tensor]) -> Tuple[Tensor, Tensor]:
@@ -264,8 +254,7 @@ if __name__ == "__main__":
         )
 
         # for qualitative eval
-        pickle.dump(data, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "data_obj.pkl"), "wb"))
-        pickle.dump(train_graph, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "train_graph_obj.pkl"), "wb"))
+        pickle.dump(data, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), args.data_obj_path), "wb"))
 
         num_nodes = data["num_users"] + data["num_diners"]
         model = Node2Vec(
@@ -349,21 +338,16 @@ if __name__ == "__main__":
                 if k <= 20:
                     logger.info(f"maP@{k}: {map} with {count} users out of all {model.num_users} users")
                     logger.info(f"ndcg@{k}: {ndcg} with {count} users out of all {model.num_users} users")
-                    logger.info(f"ranked_prec@{k}: {ranked_prec}")
+                    logger.info(f"ranked_prec@{k}: {ranked_prec} out of all {prec_count} validation dataset")
                 else:
-                    logger.info(f"near_candidate_recall@{k}: {near_candidate_recall} with {recall_count} out of all {prec_count}")
+                    logger.info(f"near_candidate_recall@{k}: {near_candidate_recall} with {recall_count} count out of all {prec_count} validation datasett")
 
                 maps.append(str(map))
                 ndcgs.append(str(ndcg))
                 ranked_precs.append(str(ranked_prec))
                 recalls.append(str(near_candidate_recall))
 
-            logger.info(f"map result: {'|'.join(maps)}")
-            logger.info(f"ndcg result: {'|'.join(ndcgs)}")
-            logger.info(f"ranked_prec result: {'|'.join(ranked_precs)}")
-            logger.info(f"near_candidate_recall result: {'|'.join(recalls)}")
-
-            torch.save(model.state_dict(), "node2vec.pt")
+            torch.save(model.state_dict(), args.model_path)
 
             logger.info(f"successfully saved node2vec torch model: epoch {epoch}")
     except:

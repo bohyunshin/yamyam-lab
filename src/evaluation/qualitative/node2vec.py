@@ -61,37 +61,48 @@ class Node2VecQualitativeEvaluation(BaseQualitativeEvaluation):
 
 
 if __name__ == "__main__":
+
+    import traceback
+    from tools.logger import setup_logger
+
     args = parse_args_eval()
+    logger = setup_logger(args.log_path)
 
-    data = pickle.load(open(args.data_obj_path, "rb"))
-    num_nodes = data["num_users"] + data["num_diners"]
+    try:
+        data = pickle.load(open(args.data_obj_path, "rb"))
+        num_nodes = data["num_users"] + data["num_diners"]
 
-    train_liked = convert_tensor(data["X_train"], list)
-    val_liked = convert_tensor(data["X_val"], list)
+        train_liked = convert_tensor(data["X_train"], list)
+        val_liked = convert_tensor(data["X_val"], list)
 
-    # qualitative evaluation
-    qualitative_eval = Node2VecQualitativeEvaluation(
-        model_path=args.model_path,
-        user_ids=torch.tensor(list(data["user_mapping"].values())),
-        diner_ids=torch.tensor(list(data["diner_mapping"].values())),
-        graph=nx.Graph(), # dummy graph
-        num_nodes=num_nodes,
-        embedding_dim=args.embedding_dim,
-        user_mapping=data["user_mapping"],
-        diner_mapping=data["diner_mapping"],
-    )
-
-    for enum in QualitativeReviewerId:
-        reviewer_id = enum.value
-        reviewer_name = enum.name
-        reviewer_id_mapping = data["user_mapping"].get(reviewer_id)
-        if reviewer_id_mapping is None:
-            print(f"reviewer {reviewer_name} not existing in training dataset")
-            continue
-        qualitative_eval.recommend(
-            user_id=reviewer_id,
-            user_name=reviewer_name,
-            tr_liked_diners=train_liked[reviewer_id_mapping],
-            val_liked_diners=val_liked[reviewer_id_mapping],
-            top_k=10,
+        # qualitative evaluation
+        qualitative_eval = Node2VecQualitativeEvaluation(
+            model_path=args.model_path,
+            user_ids=torch.tensor(list(data["user_mapping"].values())),
+            diner_ids=torch.tensor(list(data["diner_mapping"].values())),
+            graph=nx.Graph(), # dummy graph
+            num_nodes=num_nodes,
+            embedding_dim=args.embedding_dim,
+            user_mapping=data["user_mapping"],
+            diner_mapping=data["diner_mapping"],
         )
+
+        for enum in QualitativeReviewerId:
+            reviewer_id = enum.value
+            reviewer_name = enum.name
+            reviewer_id_mapping = data["user_mapping"].get(reviewer_id)
+            if reviewer_id_mapping is None:
+                logger.info(f"reviewer {reviewer_name} not existing in training dataset")
+                continue
+            tb = qualitative_eval.recommend(
+                user_id=reviewer_id,
+                user_name=reviewer_name,
+                tr_liked_diners=train_liked[reviewer_id_mapping],
+                val_liked_diners=val_liked[reviewer_id_mapping],
+                top_k=10,
+            )
+            logger.info(f"Recommendations for user {reviewer_name}")
+            logger.info(tb)
+    except:
+        logger.error(traceback.format_exc())
+        raise

@@ -80,7 +80,6 @@ def train_test_split_stratify(
     del review_4
     del review_5
 
-    # review = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241219_part_1.csv"))
     # filter diner in review dataset not existing in diner dataset
     # TODO: add this step as data validation
     diner = pd.read_csv(os.path.join(DATA_PATH, "diner/diner_df_20241219_yamyam.csv"))
