@@ -55,8 +55,25 @@ class BaseEmbedding(nn.Module):
             X_train: Tensor,
             X_val: Tensor,
             max_k: int,
-            filter_already_liked=True,
+            filter_already_liked: bool = True,
         ) -> Tuple[Tensor, Tensor, Tensor]:
+        """
+        Computes score between all users and all diners.
+        Suppose number of users is U and number of diners is D.
+        The dimension of associated matrix between users and diners is U x D.
+        This function also precalculates top-k indices and their scores.
+
+        Args:
+             X_train (Tensor): number of reviews x (diner_id, reviewer_id) in train dataset.
+             X_val (Tensor): number of reviews x (diner_id, reviewer_id) in val dataset.
+             max_k (int): maximum k among top_ks [3, 7, 10, 20, etc].
+             filter_already_liked (bool): whether filtering pre-liked diner in train dataset or not.
+
+        Returns (Tuple[Tensor, Tensor, Tensor]):
+            top_k_id (number_of_users x max_k): diner_id whose score is under max_k ranked score.
+            top_k_score (number_of_users x max_k): associated score with top_k_id.
+            scores (number_of_users x number_of_diners): calculated scores with all users and diners.
+        """
         user_embeds = self.embedding(self.user_ids)
         diner_embeds = self.embedding(self.diner_ids)
         scores = torch.mm(user_embeds, diner_embeds.t())
@@ -82,7 +99,17 @@ class BaseEmbedding(nn.Module):
             self,
             top_k_id: Tensor,
             top_k_values: List[int],
-        ):
+        ) -> None:
+        """
+        After calculating scores in `recommend_all` function, calculate metric without any candidates.
+        Metrics calculated in this function are NDCG, mAP.
+        Note that this function does not consider locality, which means recommendations
+        could be given regardless of user's location and diner's location
+
+        Args:
+             top_k_id (Tensor): diner_id whose score is under max_k ranked score.
+             top_k_values (List[int]): a list of k values.
+        """
         # prepare for metric calculation
         self.metric_at_k = {
             k: {
@@ -120,7 +147,20 @@ class BaseEmbedding(nn.Module):
             scores: Tensor,
             nearby_candidates: Dict[int, list],
             top_k_values: List[int],
-        ):
+        ) -> None:
+        """
+        After calculating scores in `recommend_all` function, calculate metric with near candidates.
+        Metrics calculated in this function are ranked_prec and recall.
+        Note that this function does consider locality, which means recommendations
+        could be given based on user's location and diner's location.
+        Each row in validation dataset contains latitude ad longitude of user's rating's diner.
+        We suppose that location of each user in each row in val dataset is location of each diner.
+
+        Args:
+             scores (Tensor): calculated scores with all users and diners.
+             nearby_candidates (Dict[int, List[int]]): near diners around ref diners with 1km
+             top_k_values (List[int]): a list of k values.
+        """
         # TODO: change for loop to more efficient program
         # calculate metric
         for user_id in self.user_ids:
@@ -153,83 +193,26 @@ class BaseEmbedding(nn.Module):
             self.metric_at_k[k][Metric.RANKED_PREC.value] /= self.metric_at_k[k][Metric.NEAR_CANDIDATE_PREC_COUNT.value]
             self.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL] /= self.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL_COUNT.value]
 
-
-    def recommend(
-            self,
-            X_train: Tensor,
-            X_val: Tensor,
-            nearby_candidates: Dict[int, list],
-            top_K = [3, 5, 7, 10, 20, 100, 200, 300, 400, 500],
-            filter_already_liked=True
-        ) -> Dict[int, Any]:
-        user_embeds = self.embedding(self.user_ids)
-        diner_embeds = self.embedding(self.diner_ids)
-        scores = torch.mm(user_embeds, diner_embeds.t())
-
-        self.map = 0.
-        self.ndcg = 0.
-
-        train_liked = convert_tensor(X_train, list)
-        val_liked = convert_tensor(X_val, list)
-        res = {}
-        metric_at_K = {k: {"map": 0, "ndcg": 0, "count": 0, "ranked_prec": 0, "near_candidate_recall": 0} for k in top_K}
-
-        # filter item_id in train dataset
-        if filter_already_liked:
-            for user_id in self.user_ids:
-                user_id = user_id.item()
-                user_liked_items = train_liked[user_id]
-                for already_liked_item_id in user_liked_items:
-                    scores[user_id - self.num_diners][already_liked_item_id] = -float('inf')  # not recommend already chosen item_id
-
-        # calculate metric
-        for user_id in self.user_ids:
-            user_id = user_id.item()
-            val_liked_item_id = np.array(val_liked[user_id])
-
-            # diner_ids visited by user in validation dataset
-            locations = val_liked[user_id]
-
-            for K in top_K:
-                score = scores[user_id - self.num_diners]
-                pred_liked_item_id = torch.topk(score, k=K).indices.detach().cpu().numpy()
-                if len(val_liked_item_id) >= K:
-                    metric = ranking_metrics_at_k(val_liked_item_id, pred_liked_item_id)
-                    metric_at_K[K]["map"] += metric["ap"]
-                    metric_at_K[K]["ndcg"] += metric["ndcg"]
-                    metric_at_K[K]["count"] += 1
-
-                for location in locations:
-                    # filter only near diner
-                    near_diner = np.array(nearby_candidates[location])
-                    near_diner_score = np.array([score[i].item() for i in near_diner])
-
-                    # sort indices using predicted score
-                    indices = np.argsort(near_diner_score)[::-1]
-                    pred_near_liked_item_id = near_diner[indices][:K]
-                    metric_at_K[K]["ranked_prec"] += ranked_precision(location, pred_near_liked_item_id)
-                    # ranked_prec value higher than 0 indicates hitting of true y
-                    metric_at_K[K]["near_candidate_recall"] += (metric_at_K[K]["ranked_prec"] != 0.)
-
-                # store recommendation result when K=20
-                if K == 20:
-                    res[user_id] = pred_liked_item_id
-        for K in top_K:
-            metric_at_K[K]["map"] /= metric_at_K[K]["count"]
-            metric_at_K[K]["ndcg"] /= metric_at_K[K]["count"]
-            metric_at_K[K]["ranked_prec"] /= X_val.shape[0]
-            metric_at_K[K]["near_candidate_recall"] /= X_val.shape[0]
-        self.metric_at_K = metric_at_K
-        return res
-
     def _recommend(
             self,
             user_id: Tensor,
             already_liked_item_id: List[int],
-            latitude: float = None,
-            longitude: float = None,
             top_k: int = 10,
     ) -> Tuple[NDArray, NDArray]:
+        """
+        For qualitative evaluation, calculate score for `one` user.
+
+        Args:
+             user_id (Tensor): target user_id.
+             already_liked_item_id (List[int]): diner_ids that are already liked by user_id.
+             top_k (int): number of diners to recommend to user_id.
+             # TODO
+             latitude: user's current latitude
+             longitude: user's current longitude
+
+        Returns (Tuple[NDArray, NDArray]):
+            top_k diner_ids and associated scores.
+        """
         user_embed = self.embedding(user_id)
         diner_embeds = self.embedding(self.diner_ids)
         score = torch.mm(user_embed, diner_embeds.t()).squeeze(0)

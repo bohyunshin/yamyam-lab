@@ -25,6 +25,20 @@ class Node2VecQualitativeEvaluation(BaseQualitativeEvaluation):
             user_mapping: Dict[int, int],
             diner_mapping: Dict[int, int],
     ):
+        """
+        Evaluation class for trained node2vec model.
+        This class loads pre-trained weights of node2vec model, and does qualitative evaluation.
+
+        Args:
+             model_path (str): path to pre-trained node2vec model.
+             user_ids (Tensor): list of user_ids used in node2vec model.
+             diner_ids (Tensor): list of diner_ids used in node2vec model.
+             graph (nx.Graph): dummy value for class initialization.
+             num_nodes (int): dummy value for class initialization.
+             embedding_dim (int): dimension of node embeddings.
+             user_mapping (Dict[int, int]): mapping of user ids used in preprocessing.
+             diner_mapping (Dict[int, int]): mapping of diner ids used in preprocessing.
+        """
         super().__init__(
             user_mapping=user_mapping,
             diner_mapping=diner_mapping,
@@ -47,15 +61,11 @@ class Node2VecQualitativeEvaluation(BaseQualitativeEvaluation):
             self,
             user_id: Tensor,
             tr_liked_diners: List[int],
-            latitude: float = None,
-            longitude: float = None,
             top_k: int = 10,
     ) -> Tuple[NDArray, NDArray]:
         return self.model._recommend(
             user_id=user_id,
             already_liked_item_id=tr_liked_diners,
-            latitude=latitude,
-            longitude=longitude,
             top_k=top_k,
         )
 
@@ -96,7 +106,6 @@ if __name__ == "__main__":
                 continue
             tb = qualitative_eval.recommend(
                 user_id=reviewer_id,
-                user_name=reviewer_name,
                 tr_liked_diners=train_liked[reviewer_id_mapping],
                 val_liked_diners=val_liked[reviewer_id_mapping],
                 top_k=10,

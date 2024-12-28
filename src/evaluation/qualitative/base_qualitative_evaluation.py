@@ -20,8 +20,21 @@ class BaseQualitativeEvaluation(ABC):
             user_mapping: Dict[int, int],
             diner_mapping: Dict[int, int],
     ):
+        """
+        Base class for qualitative evaluation.
+        Be cautious of id mapping. When preprocessing before model training,
+        all user_ids and diner_ids are 1-1 mapped for efficient searching.
+        For example, user_id 1742183 is mapped to 0.
+        When qualitative evaluation, raw user_id (e.g., 1742183) is given.
+        Therefore, re-mapping logic is required for proper evaluation
+
+        Args:
+             user_mapping (Dict[int, int]): user mapping dictionary in preprocessing step.
+             diner_mapping (Dict[int, int]): diner mapping dictionary in preprocessing step.
+        """
         self.diners = pd.read_csv(os.path.join(DATA_PATH, "diner/diner_df_20241219_yamyam.csv"))
         self.user_mapping = user_mapping
+        # reverse mapping to original diner_id
         self.diner_mapping = {v:k for k,v in diner_mapping.items()}
 
     @abstractmethod
@@ -29,30 +42,39 @@ class BaseQualitativeEvaluation(ABC):
             self,
             user_id: Tensor,
             tr_liked_diners: List[int],
-            latitude: float = None,
-            longitude: float = None,
             top_k: int = 10,
     ) -> Tuple[NDArray, NDArray]:
+        """
+        Abstract method for individual recommendation
+        """
         raise NotImplementedError
 
     def recommend(
             self,
             user_id: int,
-            user_name: str,
             tr_liked_diners: List[int],
             val_liked_diners: List[int],
-            latitude: float = None,
-            longitude: float = None,
             top_k: int = 10,
     ) -> PrettyTable:
+        """
+        Recommend top_k ranked diners to user_id.
+        Exclude diners that are already liked by user_id in training dataset.
+        Include various information, such as diner name or whether it is actually hitted.
+
+        Args:
+             user_id (int): target user_id to recommend before mapping.
+             tr_liked_diners (List[int]): list of diners liked by user_id in training dataset.
+             val_liked_diners (List[int]): list of diners liked by user_id validation dataset.
+
+        Returns (PrettyTable):
+            PrettyTable object.
+        """
         user_id_mapping = self.user_mapping.get(user_id, None)
         if user_id_mapping is None:
             raise ValueError(f"No mapping for user {user_id}")
         pred_diner_id, pred_diner_score = self._recommend(
             user_id=torch.tensor([user_id_mapping]),
             tr_liked_diners=tr_liked_diners,
-            latitude=latitude,
-            longitude=longitude,
             top_k=top_k,
         )
         pred_diner_id_mapping = [self.diner_mapping[diner] for diner in pred_diner_id]
