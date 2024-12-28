@@ -117,7 +117,7 @@ class BaseEmbedding(nn.Module):
                 Metric.NDCG.value: 0,
                 Metric.NO_CANDIDATE_COUNT.value: 0,
                 Metric.RANKED_PREC.value: 0,
-                Metric.NEAR_CANDIDATE_PREC_COUNT: 0,
+                Metric.NEAR_CANDIDATE_PREC_COUNT.value: 0,
                 Metric.NEAR_CANDIDATE_RECALL.value: 0,
                 Metric.NEAR_CANDIDATE_RECALL_COUNT.value: 0,
             }
