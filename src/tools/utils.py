@@ -1,4 +1,5 @@
 from typing import Union, List, Dict
+import os
 from collections import defaultdict
 
 from torch import Tensor
@@ -34,3 +35,17 @@ def convert_tensor(
         else:
             res[reviewer_id].append(diner_id)
     return res
+
+
+def get_num_workers() -> int:
+    """
+    Get number of workers for data loader in pytorch.
+
+    Returns (int)
+        Number of workers for data loader in pytorch. Note that even if there are
+        lots of cpus, it may not be a good idea to use many of them because
+        context switching overhead could interrupt training.
+        It could be best to determine optimal num_workers with minimal experiments.
+    """
+    num_cores = os.cpu_count()
+    return min(4, num_cores // 2)

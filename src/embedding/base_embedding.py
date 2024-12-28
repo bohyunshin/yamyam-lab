@@ -11,10 +11,6 @@ from torch.utils.data import DataLoader
 from tools.utils import convert_tensor
 from evaluation.metric import ranking_metrics_at_k, ranked_precision
 
-# set cpu or cuda for default option
-# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-# torch.set_default_device(device.type)
-
 
 class BaseEmbedding(nn.Module):
     def __init__(
@@ -51,6 +47,110 @@ class BaseEmbedding(nn.Module):
     @abstractmethod
     def loss(self, pos_rw: Tensor, neg_rw: Tensor) -> Tensor:
         raise NotImplementedError
+
+    def recommend_all(
+            self,
+            X_train: Tensor,
+            X_val: Tensor,
+            max_k: int,
+            filter_already_liked=True,
+        ) -> Tuple[Tensor, Tensor, Tensor]:
+        user_embeds = self.embedding(self.user_ids)
+        diner_embeds = self.embedding(self.diner_ids)
+        scores = torch.mm(user_embeds, diner_embeds.t())
+
+        # TODO: change for loop to more efficient program
+        # filter diner id already liked by user in train dataset
+        if filter_already_liked:
+            for diner_id, user_id in X_train:
+                diner_id = diner_id.item()
+                user_id = user_id.item()
+                # not recommend already chosen item_id by setting prediction value as -inf
+                scores[user_id - self.num_diners][diner_id] = -float('inf')
+        # store true diner id visited by user in validation dataset
+        self.val_liked = convert_tensor(X_val, list)
+
+        top_k = torch.topk(scores, k=max_k)
+        top_k_id = top_k.indices
+        top_k_score = top_k.values
+
+        return top_k_id, top_k_score, scores
+
+    def calculate_no_candidate_metric(
+            self,
+            top_k_id: Tensor,
+            top_k_values: List[int],
+        ):
+        # prepare for metric calculation
+        self.metric_at_k = {
+            k: {
+                "map": 0,
+                "ndcg": 0,
+                "no_candidate_count": 0,
+                "ranked_prec": 0,
+                "near_candidate_recall": 0,
+                "near_candidate_prec_count": 0,
+                "near_candidate_recall_count": 0,
+            }
+            for k in top_k_values
+        }
+
+        # TODO: change for loop to more efficient program
+        # calculate metric
+        for user_id in self.user_ids:
+            user_id = user_id.item()
+            val_liked_item_id = np.array(self.val_liked[user_id])
+
+            for k in top_k_values:
+                pred_liked_item_id = top_k_id[user_id - self.num_diners][:k].detach().cpu().numpy()
+                if len(val_liked_item_id) >= k:
+                    metric = ranking_metrics_at_k(val_liked_item_id, pred_liked_item_id)
+                    self.metric_at_k[k]["map"] += metric["ap"]
+                    self.metric_at_k[k]["ndcg"] += metric["ndcg"]
+                    self.metric_at_k[k]["no_candidate_count"] += 1
+
+        for k in top_k_values:
+            self.metric_at_k[k]["map"] /= self.metric_at_k[k]["no_candidate_count"]
+            self.metric_at_k[k]["ndcg"] /= self.metric_at_k[k]["no_candidate_count"]
+
+    def calculate_near_candidate_metric(
+            self,
+            scores: Tensor,
+            nearby_candidates: Dict[int, list],
+            top_k_values: List[int],
+        ):
+        # TODO: change for loop to more efficient program
+        # calculate metric
+        for user_id in self.user_ids:
+            user_id = user_id.item()
+            for k in top_k_values:
+                # diner_ids visited by user in validation dataset
+                locations = self.val_liked[user_id]
+                for location in locations:
+                    # filter only near diner
+                    near_diner_ids = torch.tensor(nearby_candidates[location])
+                    near_diner_scores = scores[user_id - self.num_diners][near_diner_ids]
+
+                    # sort indices using predicted score
+                    sorted_indices = torch.argsort(near_diner_scores, descending=True)
+                    near_diner_ids_sorted = near_diner_ids[sorted_indices]
+
+                    # calculate metric
+                    self.metric_at_k[k]["ranked_prec"] += ranked_precision(
+                        liked_item=location,
+                        reco_items=near_diner_ids_sorted.detach().cpu().numpy(),
+                    )
+                    self.metric_at_k[k]["near_candidate_prec_count"] += 1
+
+                    if len(locations) > k:
+                        # ranked_prec value higher than 0 indicates hitting of true y
+                        self.metric_at_k[k]["near_candidate_recall"] += (self.metric_at_k[k]["ranked_prec"] > 0.)
+                        self.metric_at_k[k]["near_candidate_recall_count"] += 1
+
+        for k in top_k_values:
+            self.metric_at_k[k]["ranked_prec"] /= self.metric_at_k[k]["near_candidate_prec_count"]
+            self.metric_at_k[k]["near_candidate_recall"] /= self.metric_at_k[k]["near_candidate_recall_count"]
+
 
     def recommend(
             self,
