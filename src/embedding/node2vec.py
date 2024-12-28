@@ -15,6 +15,7 @@ from tools.utils import get_num_workers
 from constant.preprocess.preprocess import MIN_REVIEWS
 from constant.candidate.near import MAX_DISTANCE_KM
 from constant.device.device import DEVICE
+from constant.metric.metric import Metric
 
 
 class Node2Vec(BaseEmbedding):
@@ -333,25 +334,18 @@ if __name__ == "__main__":
                 nearby_candidates=nearby_candidates_mapping
             )
 
-            # recommendations = model.recommend(
-            #     X_train=data["X_train"],
-            #     X_val=data["X_val"],
-            #     nearby_candidates=nearby_candidates_mapping,
-            #     filter_already_liked=True
-            # )
-            #
             maps = []
             ndcgs = []
             ranked_precs = []
             recalls = []
             for k in model.metric_at_k.keys():
-                map = round(model.metric_at_k[k]["map"], 5)
-                ndcg = round(model.metric_at_k[k]["ndcg"], 5)
-                ranked_prec = round(model.metric_at_k[k]["ranked_prec"], 5)
-                near_candidate_recall = round(model.metric_at_k[k]["near_candidate_recall"], 5)
-                count = model.metric_at_k[k]["count"]
-                recall_count = model.metric_at_k[k]["near_candidate_recall_count"]
-                prec_count = model.metric_at_k[k]["near_candidate_prec_count"]
+                map = round(model.metric_at_k[k][Metric.MAP.value], 5)
+                ndcg = round(model.metric_at_k[k][Metric.NDCG.value], 5)
+                ranked_prec = round(model.metric_at_k[k][Metric.RANKED_PREC.value], 5)
+                near_candidate_recall = round(model.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL.value], 5)
+                count = model.metric_at_k[k][Metric.NO_CANDIDATE_COUNT]
+                recall_count = model.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL_COUNT.value]
+                prec_count = model.metric_at_k[k][Metric.NEAR_CANDIDATE_PREC_COUNT.value]
                 if k <= 20:
                     logger.info(f"maP@{k}: {map} with {count} users out of all {model.num_users} users")
                     logger.info(f"ndcg@{k}: {ndcg} with {count} users out of all {model.num_users} users")
