@@ -332,7 +332,7 @@ if __name__ == "__main__":
                 ndcg = round(model.metric_at_k[k][Metric.NDCG.value], 5)
                 ranked_prec = round(model.metric_at_k[k][Metric.RANKED_PREC.value], 5)
                 near_candidate_recall = round(model.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL.value], 5)
-                count = model.metric_at_k[k][Metric.NO_CANDIDATE_COUNT]
+                count = model.metric_at_k[k][Metric.NO_CANDIDATE_COUNT.value]
                 recall_count = model.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL_COUNT.value]
                 prec_count = model.metric_at_k[k][Metric.NEAR_CANDIDATE_PREC_COUNT.value]
                 if k <= 20:
