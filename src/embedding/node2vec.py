@@ -78,7 +78,7 @@ class Node2Vec(BaseEmbedding):
         )
         self.graph = graph
         self.embedding_dim = embedding_dim
-        self.walk_length = walk_length - 1
+        self.walk_length = walk_length
         self.context_size = context_size
         self.walks_per_node = walks_per_node
         self.p = p
@@ -137,8 +137,9 @@ class Node2Vec(BaseEmbedding):
             node_ids=batch.detach().cpu().numpy(),
             d_graph=self.d_graph,
             walk_length=self.walk_length,
-            num_walks=self.walks_per_node,
+            num_walks=1,
         )
+        return rw
         walks = []
         num_walks_per_rw = self.walk_length - (self.context_size - 1)
         for j in range(num_walks_per_rw):
@@ -158,12 +159,13 @@ class Node2Vec(BaseEmbedding):
         Returns (Tensor):
             Negative samples for each of node ids.
         """
-        batch = batch.repeat(self.walks_per_node * self.num_negative_samples)
+        batch = batch.repeat(self.walks_per_node)
 
-        rw = torch.randint(self.num_nodes, (batch.size(0), self.walk_length),
+        rw = torch.randint(self.num_nodes, (batch.size(0), self.num_negative_samples),
                            dtype=batch.dtype, device=batch.device)
         rw = torch.cat([batch.view(-1, 1), rw], dim=-1)
 
+        return rw
         walks = []
         num_walks_per_rw = self.walk_length - (self.context_size - 1)
         for j in range(num_walks_per_rw):
@@ -276,6 +278,7 @@ if __name__ == "__main__":
             walks_per_node=args.walks_per_node,
             num_nodes=num_nodes,
             context_size=args.context_size,
+            num_negative_samples=args.num_negative_samples,
             q=args.q,
             p=args.p,
         ).to(device)
