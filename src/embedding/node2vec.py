@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 
 # set cpu or cuda for default option
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-torch.set_default_device(device.type)
+# torch.set_default_device(device.type)
 
 from candidate.near import NearCandidateGenerator
 from embedding.base_embedding import BaseEmbedding
@@ -89,7 +89,7 @@ class Node2Vec(BaseEmbedding):
 
         self.embedding = Embedding(self.num_nodes, embedding_dim)
 
-        if inference is True:
+        if inference is False:
             self.d_graph = precompute_probabilities(
                 graph=graph,
                 p=p,
@@ -295,17 +295,17 @@ if __name__ == "__main__":
             nearby_id_mapping = [diner_mapping.get(diner_id) for diner_id in nearby_id if diner_mapping.get(diner_id) != None]
             nearby_candidates_mapping[diner_mapping[ref_id]] = nearby_id_mapping
 
-        seed = torch.Generator(device=device.type).manual_seed(args.random_state)
-        loader = model.loader(batch_size=args.batch_size, shuffle=True, generator=seed)
+        # seed = torch.Generator(device=device.type).manual_seed(args.random_state)
+        loader = model.loader(batch_size=args.batch_size, shuffle=True)
         for epoch in range(args.epochs):
             total_loss = 0
-            # for pos_rw, neg_rw in loader:
-            #     optimizer.zero_grad()
-            #     loss = model.loss(pos_rw.to(device), neg_rw.to(device))
-            #     loss.backward()
-            #     optimizer.step()
-            #     total_loss += loss.item()
-            # total_loss /= len(loader)
+            for pos_rw, neg_rw in loader:
+                optimizer.zero_grad()
+                loss = model.loss(pos_rw.to(device), neg_rw.to(device))
+                loss.backward()
+                optimizer.step()
+                total_loss += loss.item()
+            total_loss /= len(loader)
 
             logger.info(f"epoch {epoch}: train loss {total_loss:.4f}")
 

@@ -16,8 +16,7 @@ DATA_PATH = os.path.join(
 )
 
 # set cpu or cuda for default option
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-torch.set_default_device(device.type)
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class TorchData(Dataset):
@@ -159,13 +158,13 @@ def prepare_torch_dataloader(
     Returns (Tuple[DataLoader, DataLoader]):
         Train / validation dataloader.
     """
-    seed = torch.Generator(device=device.type).manual_seed(random_state)
+    # seed = torch.Generator(device=device.type).manual_seed(random_state)
 
     train_dataset = TorchData(X_train, y_train)
     val_dataset = TorchData(X_val, y_val)
 
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, generator=seed)
-    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, generator=seed)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_dataloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
     return train_dataloader, val_dataloader
 
 

@@ -12,8 +12,8 @@ from tools.utils import convert_tensor
 from evaluation.metric import ranking_metrics_at_k, ranked_precision
 
 # set cpu or cuda for default option
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-torch.set_default_device(device.type)
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# torch.set_default_device(device.type)
 
 
 class BaseEmbedding(nn.Module):
