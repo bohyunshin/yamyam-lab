@@ -278,7 +278,7 @@ if __name__ == "__main__":
             context_size=args.context_size,
             q=args.q,
             p=args.p,
-        )
+        ).to(device)
         optimizer = torch.optim.Adam(list(model.parameters()), lr=args.lr)
 
         # get near 1km diner_ids
