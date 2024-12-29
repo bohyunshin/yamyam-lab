@@ -1,8 +1,35 @@
 import torch
+from torch import Tensor
+import torch.nn as nn
 import torch.nn.functional as F
 
 
-def svd_loss(pred, true, params, regularization, user_idx, diner_idx, num_users, num_diners):
+def svd_loss(
+        pred: Tensor,
+        true: Tensor,
+        params: nn.Parameter,
+        regularization: float,
+        user_idx: Tensor,
+        diner_idx: Tensor,
+        num_users: int,
+        num_diners: int
+) -> float:
+    """
+    Calculates svd loss using bias together.
+
+    Args:
+        pred (Tensor): Predicted ratings using model.
+        true (Tensor): True ratings from validation dataset.
+        params (nn.Parameter): Model parameters in tensor generator.
+        regularization (float): Regularization parameter.
+        user_idx (Tensor): User ids used when extracting related embeddings.
+        diner_idx (Tensor): Diner ids used when extracting related embeddings.
+        num_users (int): Number of users.
+        num_diners (int): Number of diners.
+
+    Returns (float):
+        Calculated svd loss.
+    """
     true = true.squeeze()
     mse = F.mse_loss(pred, true, reduction='mean')
     penalty = torch.tensor(0., requires_grad=True)

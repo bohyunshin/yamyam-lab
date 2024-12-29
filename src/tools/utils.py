@@ -1,11 +1,28 @@
+from typing import Union, List, Dict
+import os
 from collections import defaultdict
 
+from torch import Tensor
 
-def convert_tensor(ts, structure):
-    """Convert 2 dimensional tensor to dict
-    ts: torch.tensor (n x 2)
-        Columns should be matched with (diner_id, reviewer_id)
-    structure: dict or list
+
+def convert_tensor(
+        ts: Tensor,
+        structure: Union[dict, list]
+) -> Dict[int, Union[List[int], Dict[int, int]]]:
+    """
+    Convert 2 dimensional tensor to dict or list.
+    Original tensor includes interaction between reviewer and diner.
+
+    Args:
+        ts (Tensor): n x 2 dimension tensors whose columns are matched with (diner_id, reviewer_id).
+            Should be careful of column ordering.
+        structure (Union[dict, list]): Data type of value corresponding key in return object.
+
+    Returns (Dict[int, Union[List[int], Dict[int, int]]]):
+        Key is reviewer id and values are diner_id interacted by reviewer id.
+        Data types of values are dictionary or list.
+        In case dictionary, res[reviewer_id][diner_id] is 1 if interacted else 0.
+        In case list, res[reviewer_id] is a list of diner_id interacted by reviewer id.
     """
     assert ts.shape[1] == 2
     assert structure in [dict, list]
@@ -19,12 +36,16 @@ def convert_tensor(ts, structure):
             res[reviewer_id].append(diner_id)
     return res
 
-def get_user_locations(ts):
+
+def get_num_workers() -> int:
     """
-    ts: torch.tensor (n x 2)
-        Columns should be matched with (diner_id, reviewer_id)
+    Get number of workers for data loader in pytorch.
+
+    Returns (int)
+        Number of workers for data loader in pytorch. Note that even if there are
+        lots of cpus, it may not be a good idea to use many of them because
+        context switching overhead could interrupt training.
+        It could be best to determine optimal num_workers with minimal experiments.
     """
-    res = defaultdict(list)
-    for (diner_id, reviewer_id) in ts:
-        res[reviewer_id.item()].append(diner_id.item())
-    return res
+    num_cores = os.cpu_count()
+    return min(4, num_cores // 2)

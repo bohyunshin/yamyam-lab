@@ -1,3 +1,5 @@
+from typing import Dict, List
+
 import numpy as np
 from numpy.typing import NDArray
 import os
@@ -14,7 +16,7 @@ DATA_PATH = os.path.join(
 
 class NearCandidateGenerator:
     def __init__(self):
-        diners = pd.read_csv(os.path.join(DATA_PATH, "diner/diner_df_20241211_yamyam.csv"))
+        diners = pd.read_csv(os.path.join(DATA_PATH, "diner/diner_df_20241219_yamyam.csv"))
         diner_ids = diners["diner_idx"].unique()
         self.mapping_diner_idx = {i:id for i,id in enumerate(diner_ids)}
 
@@ -24,7 +26,10 @@ class NearCandidateGenerator:
         # get kd tree
         self.kd_tree = self.create_kd_tree()
 
-    def create_kd_tree(self):
+    def create_kd_tree(self) -> KDTree:
+        """
+        Create a KDTree in advance.
+        """
         # Create KDTree
         tree = KDTree(self.diner_coords)
         return tree
@@ -32,20 +37,18 @@ class NearCandidateGenerator:
     def get_near_candidate(
             self,
             coord: NDArray,
-            max_distance_km: int,
+            max_distance_km: float,
             is_radians: bool = True,
-    ):
+    ) -> NDArray:
         """
         Get near max_distance_km diners given user's coordinate.
 
-        Params
-        ------
-        kd_tree: KDTree using diner's coordinates.
-            Note that this tree is made using radians from coordinates.
-        coord: (latitude, longitude) numpy array. Should be cautious of ordering.
-            Input could be radians or raw coordinates which is converted to
-            radians depending on `is_radians` argument.
-        is_radians: Whether `coord` is converted to radians already or not
+        Args:
+            coord (NDArray): Should be cautious of ordering (latitude, longitude).
+                Input could be radians or raw coordinates which is converted to
+                radians depending on `is_radians` argument.
+            max_distance_km (float): Based on `coord`, distance of how close diners want to get.
+            is_radians (bool): Whether `coord` is converted to radians already or not.
         """
         # if coordinate is raw (latitude, longitude), should convert to radians
         if is_radians is False:
@@ -56,8 +59,14 @@ class NearCandidateGenerator:
 
     def get_near_candidates_for_all_diners(
             self,
-            max_distance_km: int
-    ):
+            max_distance_km: float
+    ) -> Dict[int, List[int]]:
+        """
+        Get near candidates for all of diners in dataset
+
+        Args:
+            max_distance_km (float): Based on `coord`, distance of how close diners want to get.
+        """
         # For each of diner, query KDTree for diners within max_distance_rad
         result = {}
         for i, coord_rad in enumerate(self.diner_coords):
@@ -73,7 +82,16 @@ class NearCandidateGenerator:
 
         return result
 
-    def get_max_distance_rad(self, max_distance_km: int):
+    def get_max_distance_rad(self, max_distance_km: float) -> float:
+        """
+        Convert kilometer to radians
+
+        Args:
+            max_distance_km (float): Based on `coord`, distance of how close diners want to get.
+
+        Returns (float):
+            Converted radians value.
+        """
         # Earth's radius in kilometers
         earth_radius_km = 6371
 
