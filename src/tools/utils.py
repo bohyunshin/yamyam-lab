@@ -49,3 +49,9 @@ def get_num_workers() -> int:
     """
     num_cores = os.cpu_count()
     return min(4, num_cores // 2)
+
+def safe_divide(numerator, denominator):
+    try:
+        return numerator / denominator
+    except ZeroDivisionError:
+        return 0

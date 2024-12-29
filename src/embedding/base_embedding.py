@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 
 from constant.device.device import DEVICE
 from constant.metric.metric import Metric, NearCandidateMetric
-from tools.utils import convert_tensor
+from tools.utils import convert_tensor, safe_divide
 from evaluation.metric import ranking_metrics_at_k, ranked_precision
 
 
@@ -78,7 +78,6 @@ class BaseEmbedding(nn.Module):
         max_k = max(top_k_values)
         batch_size = 1000
         start = 0
-        end = start + batch_size
         diner_embeds = self.embedding(self.diner_ids)
 
         # store true diner id visited by user in validation dataset
@@ -86,7 +85,7 @@ class BaseEmbedding(nn.Module):
         self.val_liked = convert_tensor(X_val, list)
 
         while start < self.num_users:
-            batch_users = self.user_ids[start:end]
+            batch_users = self.user_ids[start:start+batch_size]
             user_embeds = self.embedding(batch_users)
             scores = torch.mm(user_embeds, diner_embeds.t())
 
@@ -117,10 +116,22 @@ class BaseEmbedding(nn.Module):
             start += batch_size
 
         for k in top_k_values:
-            self.metric_at_k[k][Metric.MAP.value] /= self.metric_at_k[k][Metric.COUNT.value]
-            self.metric_at_k[k][Metric.NDCG.value] /= self.metric_at_k[k][Metric.COUNT.value]
-            self.metric_at_k[k][NearCandidateMetric.RANKED_PREC.value] /= self.metric_at_k[k][NearCandidateMetric.RANKED_PREC_COUNT.value]
-            self.metric_at_k[k][NearCandidateMetric.RECALL.value] /= self.metric_at_k[k][NearCandidateMetric.RECALL_COUNT.value]
+            self.metric_at_k[k][Metric.MAP.value] = safe_divide(
+                numerator=self.metric_at_k[k][Metric.MAP.value],
+                denominator=self.metric_at_k[k][Metric.COUNT.value],
+            )
+            self.metric_at_k[k][Metric.NDCG.value] = safe_divide(
+                numerator=self.metric_at_k[k][Metric.NDCG.value],
+                denominator=self.metric_at_k[k][Metric.COUNT.value],
+            )
+            self.metric_at_k[k][NearCandidateMetric.RANKED_PREC.value] = safe_divide(
+                numerator=self.metric_at_k[k][NearCandidateMetric.RANKED_PREC.value],
+                denominator=self.metric_at_k[k][NearCandidateMetric.RANKED_PREC_COUNT.value],
+            )
+            self.metric_at_k[k][NearCandidateMetric.RECALL.value] = safe_divide(
+                numerator=self.metric_at_k[k][NearCandidateMetric.RECALL.value],
+                denominator=self.metric_at_k[k][NearCandidateMetric.RECALL_COUNT.value]
+            )
 
     def calculate_no_candidate_metric(
             self,

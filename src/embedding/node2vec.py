@@ -315,27 +315,34 @@ if __name__ == "__main__":
 
             maps = []
             ndcgs = []
-            ranked_precs = []
             recalls = []
+            ranked_precs = []
+            candidate_recalls = []
             for k in model.metric_at_k.keys():
+                # no candidate metric
                 map = round(model.metric_at_k[k][Metric.MAP.value], 5)
                 ndcg = round(model.metric_at_k[k][Metric.NDCG.value], 5)
+                recall = round(model.metric_at_k[k][Metric.RECALL.value], 5)
+                count = model.metric_at_k[k][Metric.COUNT.value]
+
+                # near candidate metric
                 ranked_prec = round(model.metric_at_k[k][NearCandidateMetric.RANKED_PREC.value], 5)
                 near_candidate_recall = round(model.metric_at_k[k][NearCandidateMetric.RECALL.value], 5)
-                count = model.metric_at_k[k][Metric.COUNT.value]
                 recall_count = model.metric_at_k[k][NearCandidateMetric.RECALL_COUNT.value]
                 prec_count = model.metric_at_k[k][NearCandidateMetric.RANKED_PREC_COUNT.value]
                 if k <= 20:
                     logger.info(f"maP@{k}: {map} with {count} users out of all {model.num_users} users")
                     logger.info(f"ndcg@{k}: {ndcg} with {count} users out of all {model.num_users} users")
+                    logger.info(f"recall@{k}: {recall} with {count} users out of all {model.num_users} users")
                     logger.info(f"ranked_prec@{k}: {ranked_prec} out of all {prec_count} validation dataset")
                 else:
                     logger.info(f"near_candidate_recall@{k}: {near_candidate_recall} with {recall_count} count out of all {prec_count} validation datasett")
 
                 maps.append(str(map))
                 ndcgs.append(str(ndcg))
+                recalls.append(str(recall))
                 ranked_precs.append(str(ranked_prec))
-                recalls.append(str(near_candidate_recall))
+                candidate_recalls.append(str(near_candidate_recall))
 
             torch.save(model.state_dict(), args.model_path)
 
