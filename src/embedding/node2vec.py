@@ -346,6 +346,12 @@ if __name__ == "__main__":
 
             torch.save(model.state_dict(), args.model_path)
 
+            logger.info(f"map result: {'|'.join(maps)}")
+            logger.info(f"ndcg result: {'|'.join(ndcgs)}")
+            logger.info(f"recall: {'|'.join(recalls)}")
+            logger.info(f"ranked_prec: {'|'.join(ranked_precs)}")
+            logger.info(f"candidate_recall: {'|'.join(candidate_recalls)}")
+
             logger.info(f"successfully saved node2vec torch model: epoch {epoch}")
 
             # # delete tensors to reserve storage in gpu

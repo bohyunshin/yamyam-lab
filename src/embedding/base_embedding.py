@@ -167,7 +167,7 @@ class BaseEmbedding(nn.Module):
         # TODO: change for loop to more efficient program
         # calculate metric
         for i, user_id in enumerate(user_ids):
-            user_id = user_id.item()
+            user_id = user_id.item() - self.num_diners
             val_liked_item_id = np.array(self.val_liked[user_id])
 
             for k in top_k_values:
@@ -202,7 +202,7 @@ class BaseEmbedding(nn.Module):
         # TODO: change for loop to more efficient program
         # calculate metric
         for i, user_id in enumerate(user_ids):
-            user_id = user_id.item()
+            user_id = user_id.item() - self.num_diners
             for k in top_k_values:
                 # diner_ids visited by user in validation dataset
                 locations = self.val_liked[user_id]
