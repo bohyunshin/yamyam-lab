@@ -15,7 +15,7 @@ from tools.utils import get_num_workers
 from constant.preprocess.preprocess import MIN_REVIEWS
 from constant.candidate.near import MAX_DISTANCE_KM
 from constant.device.device import DEVICE
-from constant.metric.metric import Metric
+from constant.metric.metric import Metric, NearCandidateMetric
 
 
 class Node2Vec(BaseEmbedding):
@@ -330,11 +330,11 @@ if __name__ == "__main__":
             for k in model.metric_at_k.keys():
                 map = round(model.metric_at_k[k][Metric.MAP.value], 5)
                 ndcg = round(model.metric_at_k[k][Metric.NDCG.value], 5)
-                ranked_prec = round(model.metric_at_k[k][Metric.RANKED_PREC.value], 5)
-                near_candidate_recall = round(model.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL.value], 5)
-                count = model.metric_at_k[k][Metric.NO_CANDIDATE_COUNT.value]
-                recall_count = model.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL_COUNT.value]
-                prec_count = model.metric_at_k[k][Metric.NEAR_CANDIDATE_PREC_COUNT.value]
+                ranked_prec = round(model.metric_at_k[k][NearCandidateMetric.RANKED_PREC.value], 5)
+                near_candidate_recall = round(model.metric_at_k[k][NearCandidateMetric.RECALL.value], 5)
+                count = model.metric_at_k[k][Metric.COUNT.value]
+                recall_count = model.metric_at_k[k][NearCandidateMetric.RECALL_COUNT.value]
+                prec_count = model.metric_at_k[k][NearCandidateMetric.RANKED_PREC_COUNT.value]
                 if k <= 20:
                     logger.info(f"maP@{k}: {map} with {count} users out of all {model.num_users} users")
                     logger.info(f"ndcg@{k}: {ndcg} with {count} users out of all {model.num_users} users")
@@ -350,6 +350,9 @@ if __name__ == "__main__":
             torch.save(model.state_dict(), args.model_path)
 
             logger.info(f"successfully saved node2vec torch model: epoch {epoch}")
+
+            # delete tensors to reserve storage in gpu
+            del top_k_id, top_k_score, scores
     except:
         logger.error(traceback.format_exc())
         raise

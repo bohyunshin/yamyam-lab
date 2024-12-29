@@ -2,6 +2,8 @@ from typing import Dict
 import numpy as np
 from numpy.typing import NDArray
 
+from constant.metric.metric import Metric
+
 
 def ranked_precision(
         liked_item: int,
@@ -70,4 +72,4 @@ def ranking_metrics_at_k(
     # Calculate recall
     recall = hit / len(liked_items)
 
-    return {"ap": ap, "ndcg": ndcg, "recall": recall}
+    return {Metric.AP.value: ap, Metric.NDCG.value: ndcg, Metric.RECALL.value: recall}

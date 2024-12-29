@@ -9,7 +9,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from constant.device.device import DEVICE
-from constant.metric.metric import Metric
+from constant.metric.metric import Metric, NearCandidateMetric
 from tools.utils import convert_tensor
 from evaluation.metric import ranking_metrics_at_k, ranked_precision
 
@@ -115,11 +115,12 @@ class BaseEmbedding(nn.Module):
             k: {
                 Metric.MAP.value: 0,
                 Metric.NDCG.value: 0,
-                Metric.NO_CANDIDATE_COUNT.value: 0,
-                Metric.RANKED_PREC.value: 0,
-                Metric.NEAR_CANDIDATE_PREC_COUNT.value: 0,
-                Metric.NEAR_CANDIDATE_RECALL.value: 0,
-                Metric.NEAR_CANDIDATE_RECALL_COUNT.value: 0,
+                Metric.RECALL.value: 0,
+                Metric.COUNT.value: 0,
+                NearCandidateMetric.RANKED_PREC.value: 0,
+                NearCandidateMetric.RANKED_PREC_COUNT.value: 0,
+                NearCandidateMetric.RECALL.value: 0,
+                NearCandidateMetric.RECALL_COUNT.value: 0,
             }
             for k in top_k_values
         }
@@ -136,11 +137,12 @@ class BaseEmbedding(nn.Module):
                     metric = ranking_metrics_at_k(val_liked_item_id, pred_liked_item_id)
                     self.metric_at_k[k][Metric.MAP.value] += metric[Metric.AP.value]
                     self.metric_at_k[k][Metric.NDCG.value] += metric[Metric.NDCG.value]
-                    self.metric_at_k[k][Metric.NO_CANDIDATE_COUNT.value] += 1
+                    self.metric_at_k[k][Metric.RECALL.value] += metric[Metric.RECALL.value]
+                    self.metric_at_k[k][Metric.COUNT.value] += 1
 
         for k in top_k_values:
-            self.metric_at_k[k][Metric.MAP.value] /= self.metric_at_k[k][Metric.NO_CANDIDATE_COUNT.value]
-            self.metric_at_k[k][Metric.NDCG.value] /= self.metric_at_k[k][Metric.NO_CANDIDATE_COUNT.value]
+            self.metric_at_k[k][Metric.MAP.value] /= self.metric_at_k[k][Metric.COUNT.value]
+            self.metric_at_k[k][Metric.NDCG.value] /= self.metric_at_k[k][Metric.COUNT.value]
 
     def calculate_near_candidate_metric(
             self,
@@ -178,20 +180,20 @@ class BaseEmbedding(nn.Module):
                     near_diner_ids_sorted = near_diner_ids[sorted_indices].to(DEVICE)
 
                     # calculate metric
-                    self.metric_at_k[k][Metric.RANKED_PREC.value] += ranked_precision(
+                    self.metric_at_k[k][NearCandidateMetric.RANKED_PREC.value] += ranked_precision(
                         liked_item=location,
                         reco_items=near_diner_ids_sorted.detach().cpu().numpy(),
                     )
-                    self.metric_at_k[k][Metric.NEAR_CANDIDATE_PREC_COUNT.value] += 1
+                    self.metric_at_k[k][NearCandidateMetric.RANKED_PREC_COUNT.value] += 1
 
-                    if len(locations) > k:
+                    if near_diner_ids.shape[0] > k:
                         # ranked_prec value higher than 0 indicates hitting of true y
-                        self.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL.value] += (self.metric_at_k[k][Metric.RANKED_PREC.value] > 0.)
-                        self.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL_COUNT.value] += 1
+                        self.metric_at_k[k][NearCandidateMetric.RECALL.value] += (self.metric_at_k[k][NearCandidateMetric.RANKED_PREC.value] > 0.)
+                        self.metric_at_k[k][NearCandidateMetric.RECALL_COUNT.value] += 1
 
         for k in top_k_values:
-            self.metric_at_k[k][Metric.RANKED_PREC.value] /= self.metric_at_k[k][Metric.NEAR_CANDIDATE_PREC_COUNT.value]
-            self.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL.value] /= self.metric_at_k[k][Metric.NEAR_CANDIDATE_RECALL_COUNT.value]
+            self.metric_at_k[k][NearCandidateMetric.RANKED_PREC.value] /= self.metric_at_k[k][NearCandidateMetric.RANKED_PREC_COUNT.value]
+            self.metric_at_k[k][NearCandidateMetric.RECALL.value] /= self.metric_at_k[k][NearCandidateMetric.RECALL_COUNT.value]
 
     def _recommend(
             self,
