@@ -60,21 +60,24 @@ class BaseEmbedding(nn.Module):
             filter_already_liked: bool = True,
         ) -> None:
         """
-        Computes score between all users and all diners.
+        Generate diner recommendations for all users.
         Suppose number of users is U and number of diners is D.
         The dimension of associated matrix between users and diners is U x D.
-        This function also precalculates top-k indices and their scores.
+        However, to avoid out of memory error, batch recommendation is run.
+        For every batch users, we calculate metric when there are no candidates,
+        and there are near diner candidates.
+
+            - when there are no candidates:
+                map, ndcg, recall, ranked_prec are calculated at @3, @7, @10, @20
+            - when there are near diner candidates:
+                recall is calculated at @100, @300, @500
 
         Args:
              X_train (Tensor): number of reviews x (diner_id, reviewer_id) in train dataset.
              X_val (Tensor): number of reviews x (diner_id, reviewer_id) in val dataset.
-             max_k (int): maximum k among top_ks [3, 7, 10, 20, etc].
+             top_k_values (List[int]): a list of k values.
+             nearby_candidates (Dict[int, List[int]]): near diners around ref diners with 1km.
              filter_already_liked (bool): whether filtering pre-liked diner in train dataset or not.
-
-        Returns (Tuple[Tensor, Tensor, Tensor]):
-            top_k_id (number_of_users x max_k): diner_id whose score is under max_k ranked score.
-            top_k_score (number_of_users x max_k): associated score with top_k_id.
-            scores (number_of_users x number_of_diners): calculated scores with all users and diners.
         """
         # prepare for metric calculation
         self.metric_at_k = {
@@ -159,11 +162,12 @@ class BaseEmbedding(nn.Module):
         ) -> None:
         """
         After calculating scores in `recommend_all` function, calculate metric without any candidates.
-        Metrics calculated in this function are NDCG, mAP.
+        Metrics calculated in this function are NDCG, mAP and recall.
         Note that this function does not consider locality, which means recommendations
         could be given regardless of user's location and diner's location
 
         Args:
+             user_ids (Tensor): batch of user ids.
              top_k_id (Tensor): diner_id whose score is under max_k ranked score.
              top_k_values (List[int]): a list of k values.
         """
@@ -199,6 +203,7 @@ class BaseEmbedding(nn.Module):
         We suppose that location of each user in each row in val dataset is location of each diner.
 
         Args:
+             user_ids (Tensor): batch of user ids.
              scores (Tensor): calculated scores with all users and diners.
              nearby_candidates (Dict[int, List[int]]): near diners around ref diners with 1km
              top_k_values (List[int]): a list of k values.

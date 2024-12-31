@@ -295,16 +295,16 @@ if __name__ == "__main__":
         )
         for epoch in range(args.epochs):
             logger.info(f"################## epoch {epoch} ##################")
-            # total_loss = 0
-            # for pos_rw, neg_rw in loader:
-            #     optimizer.zero_grad()
-            #     loss = model.loss(pos_rw.to(DEVICE), neg_rw.to(DEVICE))
-            #     loss.backward()
-            #     optimizer.step()
-            #     total_loss += loss.item()
-            # total_loss /= len(loader)
-            #
-            # logger.info(f"epoch {epoch}: train loss {total_loss:.4f}")
+            total_loss = 0
+            for pos_rw, neg_rw in loader:
+                optimizer.zero_grad()
+                loss = model.loss(pos_rw.to(DEVICE), neg_rw.to(DEVICE))
+                loss.backward()
+                optimizer.step()
+                total_loss += loss.item()
+            total_loss /= len(loader)
+
+            logger.info(f"epoch {epoch}: train loss {total_loss:.4f}")
 
             top_k_values = TOP_K_VALUES_FOR_PRED + TOP_K_VALUES_FOR_CANDIDATE
 
@@ -322,7 +322,7 @@ if __name__ == "__main__":
             ranked_precs = []
             candidate_recalls = []
 
-            for k in top_k_values_for_pred:
+            for k in TOP_K_VALUES_FOR_PRED:
                 # no candidate metric
                 map = round(model.metric_at_k[k][Metric.MAP.value], 5)
                 ndcg = round(model.metric_at_k[k][Metric.NDCG.value], 5)
@@ -347,7 +347,7 @@ if __name__ == "__main__":
             logger.info(f"recall: {'|'.join(recalls)}")
             logger.info(f"ranked_prec: {'|'.join(ranked_precs)}")
 
-            for k in top_k_values_for_candidate:
+            for k in TOP_K_VALUES_FOR_CANDIDATE:
                 # near candidate metric
                 prec_count = model.metric_at_k[k][NearCandidateMetric.RANKED_PREC_COUNT.value]
                 near_candidate_recall = round(model.metric_at_k[k][NearCandidateMetric.NEAR_RECALL.value], 5)
