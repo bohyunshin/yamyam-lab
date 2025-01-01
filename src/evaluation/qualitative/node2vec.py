@@ -6,7 +6,7 @@ from numpy.typing import NDArray
 import torch
 from torch import Tensor
 
-from embedding.node2vec import Node2Vec
+from embedding.node2vec import Model
 from evaluation.qualitative.base_qualitative_evaluation import BaseQualitativeEvaluation
 from tools.utils import convert_tensor
 from tools.parse_args import parse_args_eval
@@ -43,15 +43,15 @@ class Node2VecQualitativeEvaluation(BaseQualitativeEvaluation):
             user_mapping=user_mapping,
             diner_mapping=diner_mapping,
         )
-        self.model = Node2Vec(
+        self.model = Model(
             user_ids=user_ids,
             diner_ids=diner_ids,
             graph=graph,
             embedding_dim=embedding_dim, # trained model embedding dim
             walk_length=20, # dummy value
-            context_size=10, # dummy value
             num_nodes=num_nodes,
             inference=True,
+            top_k_values=[1] # dummy value
         )
 
         self.model.load_state_dict(torch.load(model_path, weights_only=True))
