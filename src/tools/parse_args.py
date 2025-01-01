@@ -12,9 +12,6 @@ def parse_args():
     parser.add_argument("--random_state", type=int, default=42)
     parser.add_argument("--patience", type=int, default=5)
     parser.add_argument("--result_path", type=str, required=True)
-    parser.add_argument("--model_path", type=str, default="./model.pt")
-    parser.add_argument("--log_path", type=str, default="./log.log")
-
     # embedding args
     parser.add_argument("--embedding_dim", type=int, default=128)
     parser.add_argument("--walk_length", type=int, default=20)
