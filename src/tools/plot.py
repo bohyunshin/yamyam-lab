@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 import os
 
 import pandas as pd
@@ -12,6 +12,7 @@ from constant.metric.metric import Metric, NearCandidateMetric
 
 def plot_metric_at_k(
         metric: Dict[int, Dict[str, Any]],
+        tr_loss: List[float],
         parent_save_path: str,
 ) -> None:
     pred_metrics = [
@@ -60,14 +61,32 @@ def plot_metric_at_k(
             save_path=os.path.join(parent_save_path, f"{metric_name}.png"),
         )
 
+    tr_loss_df = pd.DataFrame(
+        {
+            "metric": "tr_loss",
+            "value": tr_loss,
+            "epochs": [i for i in range(len(tr_loss))],
+        }
+    )
+    plot_metric(
+        df=tr_loss_df,
+        metric_name="tr_loss",
+        save_path=os.path.join(parent_save_path, "tr_loss.png"),
+    )
 
 def plot_metric(
         df: pd.DataFrame,
         metric_name: str,
         save_path: str,
+        hue=True,
 ) -> None:
-    sns.lineplot(x="epochs", y="value", data=df, hue="@k", marker="o")
+    if hue is True:
+        sns.lineplot(x="epochs", y="value", data=df, hue="@k", marker="o")
+        title = f"{metric_name} at @k with every epoch"
+    else:
+        sns.lineplot(x="epochs", y="value", data=df, marker="o")
+        title = f"{metric_name}with every epoch"
     plt.ylabel(metric_name)
-    plt.title(f"{metric_name} at @k with every epoch")
+    plt.title(title)
     plt.savefig(save_path)
     plt.show()
