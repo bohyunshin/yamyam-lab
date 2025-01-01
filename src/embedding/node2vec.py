@@ -17,6 +17,7 @@ from constant.candidate.near import MAX_DISTANCE_KM
 from constant.device.device import DEVICE
 from constant.metric.metric import Metric, NearCandidateMetric
 from constant.evaluation.recommend import TOP_K_VALUES_FOR_PRED,TOP_K_VALUES_FOR_CANDIDATE
+from constant.save.file_name import FileName
 
 
 class Node2Vec(BaseEmbedding):
@@ -226,7 +227,8 @@ if __name__ == "__main__":
     from preprocess.preprocess import train_test_split_stratify, prepare_networkx_data
 
     args = parse_args()
-    logger = setup_logger(args.log_path)
+    os.makedirs(args.result_path, exist_ok=True)
+    logger = setup_logger(os.path.join(args.result_path, FileName.LOG.value))
 
     try:
         logger.info(f"batch size: {args.batch_size}")
@@ -241,6 +243,7 @@ if __name__ == "__main__":
         logger.info(f"num neg samples: {args.num_negative_samples}")
         logger.info(f"p: {args.p}")
         logger.info(f"q: {args.q}")
+        logger.info(f"result path: {args.result_path}")
 
         data = train_test_split_stratify(
             test_size=args.test_ratio,
@@ -255,7 +258,7 @@ if __name__ == "__main__":
         )
 
         # for qualitative eval
-        pickle.dump(data, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), args.data_obj_path), "wb"))
+        pickle.dump(data, open(os.path.join(args.result_path, FileName.DATA_OBJECT.value), "wb"))
 
         num_nodes = data["num_users"] + data["num_diners"]
         model = Node2Vec(
@@ -302,6 +305,7 @@ if __name__ == "__main__":
                 optimizer.step()
                 total_loss += loss.item()
             total_loss /= len(loader)
+            model.tr_loss.append(total_loss)
 
             logger.info(f"epoch {epoch}: train loss {total_loss:.4f}")
 
@@ -357,7 +361,19 @@ if __name__ == "__main__":
             logger.info(f"top k results for candidate generation @100, @300, @500")
             logger.info(f"candidate_recall: {'|'.join(candidate_recalls)}")
 
-            torch.save(model.state_dict(), args.model_path)
+            torch.save(model.state_dict(), str(os.path.join(args.result_path, FileName.WEIGHT.value)))
+            pickle.dump(
+                model.tr_loss,
+                open(
+                    os.path.join(args.result_path, FileName.TRAINING_LOSS.value), "wb"
+                )
+            )
+            pickle.dump(
+                model.metric_at_k,
+                open(
+                    os.path.join(args.result_path, FileName.METRIC.value), "wb"
+                )
+            )
             logger.info(f"successfully saved node2vec torch model: epoch {epoch}")
 
     except:

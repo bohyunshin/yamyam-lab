@@ -26,6 +26,7 @@ class BaseEmbedding(nn.Module):
         self.diner_ids = diner_ids
         self.num_users = len(self.user_ids)
         self.num_diners = len(self.diner_ids)
+        self.tr_loss = []
 
     @abstractmethod
     def forward(self, batch: Tensor) -> Tensor:
