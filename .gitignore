@@ -12,3 +12,8 @@ res/models/*
 data/*
 src/result/*
 tests/result/*
+
+.coverage
+.coverage.*
+converage.xml
+converage*
