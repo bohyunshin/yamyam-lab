@@ -13,7 +13,6 @@ data/*
 src/result/*
 tests/result/*
 
-.coverage
-.coverage.*
-converage.xml
-converage*
+tests/.coverage
+tests/.coverage.*
+tests/converage.xml
