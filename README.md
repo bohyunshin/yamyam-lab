@@ -102,3 +102,11 @@ Below are metric results with candidate filtering.
 - chore: 자잘한 수정이나 빌드 업데이트
 - rename: 파일 혹은 폴더명을 수정만 한 경우
 - remove: 파일을 삭제만 한 경우
+
+## How to run pytest
+
+After building environment setting correctly, just run the following command.
+
+```shell
+$ pytest
+```
