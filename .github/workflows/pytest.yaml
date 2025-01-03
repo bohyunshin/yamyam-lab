@@ -1,13 +1,10 @@
 name: Run tests and collect coverage
 
 on:
-  pull_request:
-    types:
-      - labeled
+  - pull_request_target
 
 jobs:
   test:
-    if: contains(github.event.pull_request.labels.*.name, 'needs review')
     name: Run tests and collect coverage
     runs-on: ubuntu-latest
     steps:
