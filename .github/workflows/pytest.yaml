@@ -1,4 +1,4 @@
-name: Run tests and collect coverage.
+name: Run pytest for continuous integration
 
 on:
   pull_request:
@@ -6,7 +6,7 @@ on:
 
 jobs:
   test:
-    name: Run tests and collect coverage
+    name: Run tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -35,4 +35,4 @@ jobs:
 
       - name: Run pytest
         run: |
-          poetry run pytest --cov --cov-report=xml
+          poetry run pytest
