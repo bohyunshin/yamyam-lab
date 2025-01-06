@@ -11,3 +11,8 @@ __pycache__/
 res/models/*
 data/*
 src/result/*
+tests/result/*
+
+.coverage
+.coverage.*
+coverage.xml

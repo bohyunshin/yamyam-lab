@@ -36,13 +36,15 @@ def main(args: ArgumentParser.parse_args) -> None:
         logger.info(f"p: {args.p}")
         logger.info(f"q: {args.q}")
         logger.info(f"result path: {args.result_path}")
+        logger.info(f"test: {args.test}")
 
         data = train_test_split_stratify(
             test_size=args.test_ratio,
             min_reviews=MIN_REVIEWS,
             X_columns=["diner_idx", "reviewer_id"],
             y_columns=["reviewer_review_score"],
-            pg_model=True
+            pg_model=True,
+            test=args.test,
         )
         train_graph, val_graph = prepare_networkx_data(
             X_train=data["X_train"],

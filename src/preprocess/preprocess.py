@@ -42,6 +42,7 @@ def train_test_split_stratify(
     random_state: int = 42,
     stratify: str = "reviewer_id",
     pg_model: bool = False,
+    test: bool = False,
 ) -> Dict[str, Any]:
     """
     Split review data stratifying by `stratify` column.
@@ -56,6 +57,7 @@ def train_test_split_stratify(
         random_state (int): random seed for reproducibility.
         stratify (str): reference column when stratifying review data.
         pg_model (bool): indicator whether using torch_geometric model or not.
+        test (bool): indicator whether under pytest. when set true, use part of total dataset.
 
     Returns (Dict[str, Any]):
         Dataset, statistics, and mapping information which could be used when training model.
@@ -79,6 +81,9 @@ def train_test_split_stratify(
     review = pd.concat([review_1, review_2, review_3, review_4, review_5], axis=0)[
         X_columns + y_columns
     ]
+    # for faster pytest, do not use full dataset when args.test equals True
+    if test is True:
+        review = review.iloc[:5000,:]
     del review_1
     del review_2
     del review_3

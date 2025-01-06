@@ -132,6 +132,7 @@ class BaseEmbedding(nn.Module):
                     for diner_id in already_liked_ids:
                         scores[i][diner_id] = -float("inf")
 
+            max_k = min(scores.shape[1], max_k) # to prevent index error in pytest
             top_k = torch.topk(scores, k=max_k)
             top_k_id = top_k.indices
 
