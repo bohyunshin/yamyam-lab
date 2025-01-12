@@ -1,7 +1,15 @@
-import sys
-import os
+try:
+    import os
+    import sys
+
+    sys.path.append(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../src")
+    )
+
+except ModuleNotFoundError:
+    raise Exception("Module not found")
+
 import argparse
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../src"))
 
 from train_embedding import main
 
@@ -19,7 +27,9 @@ def run_model(model):
     args.num_negative_samples = 20
     args.p = 1
     args.q = 0.5
-    args.result_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), f"../result/{args.model}")
+    args.result_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), f"../result/{args.model}"
+    )
     args.test = True
 
     main(args)
