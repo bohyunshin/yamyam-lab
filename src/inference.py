@@ -46,7 +46,7 @@ def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 @hydra.main(config_path="../config/", config_name="predict", version_base="1.3.1")
 def _main(cfg: DictConfig):
-    test, already_reviewed = load_test_dataset(cfg)
+    test, already_reviewed = load_test_dataset(cfg.user_name)
     test["user_lat"] = cfg.user_lat
     test["user_lon"] = cfg.user_lon
 

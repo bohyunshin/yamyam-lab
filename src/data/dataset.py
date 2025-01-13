@@ -1,109 +1,34 @@
-import glob
-import os
-
 import pandas as pd
-import torch
-from omegaconf import DictConfig
 from sklearn.preprocessing import LabelEncoder
 
-from preprocess.feature_store import extract_scores_array, extract_statistics
-from src.tools.google_drive import ensure_data_files
-
-# Load data (same as your current implementation)
-DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../data")
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-torch.set_default_device(device.type)
-
-# Load data
-review_data_paths = glob.glob(os.path.join(DATA_PATH, "review", "*.csv"))
+from preprocess.preprocess import preprocess_diner_data
+from tools.google_drive import ensure_data_files
 
 
-def load_dataset(cfg: DictConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_test_dataset(reviewer_id: int) -> tuple[pd.DataFrame, list[str]]:
     """
-    Load and prepare dataset for training.
+    Load test dataset for inference
+    params:
+        reviewer_id: int
 
-    Args:
-        cfg (DictConfig): configuration dictionary.
-
-    Returns:
-        tuple[pd.DataFrame, pd.Series, pd.DataFrame, pd.Series]: train features, train target, valid features, valid target.
+    return:
+        test: pd.DataFrame
+        already_reviewed: list[str]
     """
-
     # 필요한 데이터 다운로드 확인
     data_paths = ensure_data_files()
 
     # load data
     diner = pd.read_csv(data_paths["diner"])
-
-    # 범주를 정의
-    bins = [-1, 0, 10, 50, 200, float("inf")]
-
-    # pd.cut을 사용하여 정수형 범주 생성
-    diner["diner_review_cnt_category"] = pd.cut(
-        diner["all_review_cnt"], bins=bins, labels=False
-    )
-    diner["diner_review_cnt_category"] = diner["diner_review_cnt_category"].fillna(0)
-    diner["diner_review_cnt_category"] = diner["diner_review_cnt_category"].astype(int)
-
-    # Extract scores
-    # Categories for extracting scores
-    tag_categories = [
-        ("맛", "taste"),
-        ("친절", "kind"),
-        ("분위기", "mood"),
-        ("가성비", "chip"),
-        ("주차", "parking"),
-    ]
-
-    scores = extract_scores_array(diner["diner_review_tags"], tag_categories)
-
-    # 결과를 DataFrame으로 변환 및 병합
-    diner[["taste", "kind", "mood", "chip", "parking"]] = scores
-
-    # 새 컬럼으로 추가 (최소값, 최대값, 평균, 중앙값, 항목 수)
-    diner[["min_price", "max_price", "mean_price", "median_price", "menu_count"]] = (
-        diner["diner_menu_price"].apply(lambda x: extract_statistics(eval(x)))
-    )
-
-    for col in ["min_price", "max_price", "mean_price", "median_price", "menu_count"]:
-        diner[col] = diner[col].fillna(diner[col].median())
-
     review = pd.read_csv(data_paths["review"])
     reviewer = pd.read_csv(data_paths["reviewer"])
-
-    # 필요한경우
-    # reviewer["badge_scaled"] = reviewer["badge_level"] * 0.01
-
     review = pd.merge(review, reviewer, on="reviewer_id", how="left")
-
-    # 필요한 경우
-    # review["score_diff"] = review["reviewer_review_score"] - review["reviewer_avg"]
-
-    # review = pd.read_csv(os.path.join(DATA_PATH, "review/review_df_20241219_part_5.csv"))
-    review = pd.merge(review, diner, on="diner_idx", how="inner")
-    review = review.drop_duplicates(subset=["reviewer_id", "diner_idx"])
 
     # label Encoder
     le = LabelEncoder()
     review["badge_grade"] = le.fit_transform(review["badge_grade"])
 
-    return review, diner
-
-
-def load_test_dataset(cfg: DictConfig) -> tuple[pd.DataFrame, list[str]]:
-    """
-    review_data: DataFrame containing review information
-    diner_data: DataFrame containing diner information
-
-    Returns:
-        - user_2_diner_map: Mapping of user IDs to reviewed diner IDs
-        - candidate_pool: List of all diner IDs
-        - diner_id_2_name_map: Mapping of diner IDs to their names
-    """
-    # load data
-    review, diner = load_dataset(cfg)
-
-    reviewer_id = cfg.user_name
+    diner = preprocess_diner_data(diner)
 
     # 사용자별 리뷰한 레스토랑 ID 목록 생성
     user_2_diner_df = review.groupby("reviewer_id").agg({"diner_idx": list})
@@ -115,27 +40,12 @@ def load_test_dataset(cfg: DictConfig) -> tuple[pd.DataFrame, list[str]]:
     reviewed_diners = list(set(user_2_diner_map.get(reviewer_id, [])))
     candidates = [d for d in candidate_pool if d not in reviewed_diners]
     review = review[review["reviewer_id"] == reviewer_id].iloc[-1:]
+    review = review.drop(columns=["diner_idx"])
 
     # Create test data
     test = pd.DataFrame({"reviewer_id": reviewer_id, "diner_idx": candidates})
-    test = test.merge(diner, on="diner_idx")
-    test = test.merge(
-        review[
-            [
-                "reviewer_user_name",
-                "date_weight",
-                "reviewer_id",
-                "badge_grade",
-                "badge_level",
-            ]
-        ],
-        on="reviewer_id",
-    )
-    test = test.drop_duplicates(subset=["reviewer_id", "diner_idx"])
-
-    test["diner_category_small"] = test["diner_category_small"].fillna(
-        test["diner_category_middle"]
-    )
+    test = test.merge(diner, on="diner_idx", how="left")
+    test = test.merge(review, on="reviewer_id", how="left")
     already_reviewed = user_2_diner_map.get(reviewer_id, [])
 
     return test, already_reviewed
