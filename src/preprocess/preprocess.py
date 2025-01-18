@@ -299,7 +299,13 @@ def prepare_torch_geometric_data(
     return train, val
 
 
-def prepare_networkx_data(X_train: Tensor, X_val: Tensor) -> Tuple[nx.Graph, nx.Graph]:
+def prepare_networkx_data(
+        X_train: Tensor,
+        y_train: Tensor,
+        X_val: Tensor,
+        y_val: Tensor,
+        weighted: bool = False,
+    ) -> Tuple[nx.Graph, nx.Graph]:
     """
     Make train / validation dataset in nx.Graph object type.
 
@@ -313,10 +319,16 @@ def prepare_networkx_data(X_train: Tensor, X_val: Tensor) -> Tuple[nx.Graph, nx.
     train_graph = nx.Graph()
     val_graph = nx.Graph()
 
-    for diner_id, reviewer_id in X_train:
-        train_graph.add_edge(diner_id.item(), reviewer_id.item())
+    for (diner_id, reviewer_id), rating in zip(X_train, y_train):
+        if weighted is True:
+            train_graph.add_edge(diner_id.item(), reviewer_id.item(), weight=rating.item())
+        else:
+            train_graph.add_edge(diner_id.item(), reviewer_id.item())
 
-    for diner_id, reviewer_id in X_val:
-        val_graph.add_edge(diner_id.item(), reviewer_id.item())
+    for (diner_id, reviewer_id), rating in zip(X_val, y_val):
+        if weighted is True:
+            val_graph.add_edge(diner_id.item(), reviewer_id.item(), weight=rating.item())
+        else:
+            val_graph.add_edge(diner_id.item(), reviewer_id.item())
 
     return train_graph, val_graph

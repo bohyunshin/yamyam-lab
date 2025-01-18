@@ -36,6 +36,7 @@ def main(args: ArgumentParser.parse_args) -> None:
         logger.info(f"p: {args.p}")
         logger.info(f"q: {args.q}")
         logger.info(f"result path: {args.result_path}")
+        logger.info(f"weighted edge: {args.weighted_edge}")
         logger.info(f"test: {args.test}")
 
         data = train_test_split_stratify(
@@ -48,7 +49,10 @@ def main(args: ArgumentParser.parse_args) -> None:
         )
         train_graph, val_graph = prepare_networkx_data(
             X_train=data["X_train"],
+            y_train=data["y_train"],
             X_val=data["X_val"],
+            y_val=data["y_val"],
+            weighted=args.weighted_edge,
         )
 
         # for qualitative eval
