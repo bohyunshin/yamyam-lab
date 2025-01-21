@@ -289,11 +289,7 @@ def train_test_split_stratify(
 
     review = mapped_res.get("review")
     diner = mapped_res.get("diner")
-    num_users = mapped_res.get("num_users")
-    num_diners = mapped_res.get("num_diners")
-    user_mapping = mapped_res.get("user_mapping")
-    diner_mapping = mapped_res.get("diner_mapping")
-    meta_mapping = mapped_res.get("meta_mapping")
+    mapped_res = {k:v for k,v in mapped_res.items() if k not in ["review", "diner"]}
 
     train, val = train_test_split(
         review,
@@ -335,10 +331,7 @@ def train_test_split_stratify(
             "y_train": train["target"],
             "X_val": val.drop(columns=["target"]),
             "y_val": val["target"],
-            "num_diners": num_diners,
-            "num_users": num_users,
-            "diner_mapping": diner_mapping,
-            "user_mapping": user_mapping,
+            **mapped_res,
         }
 
     return {
@@ -346,12 +339,8 @@ def train_test_split_stratify(
         "y_train": torch.tensor(train[y_columns].values, dtype=torch.float32),
         "X_val": torch.tensor(val[X_columns].values),
         "y_val": torch.tensor(val[y_columns].values, dtype=torch.float32),
-        "num_diners": num_diners,
-        "num_users": num_users,
-        "diner_mapping": diner_mapping,
-        "user_mapping": user_mapping,
-        "meta_mapping": meta_mapping,
         "diner": diner,
+        **mapped_res,
     }
 
 
