@@ -13,7 +13,7 @@ from sklearn.metrics import ndcg_score
 from evaluation.metric import ranked_precision, ranking_metrics_at_k
 
 
-def test_ndcg_same_as_sklearn():
+def test_ndcg_same_as_sklearn_binary_rel():
     """
     total number of items: 5
     item_ids that user liked: [0, 3, 4]
@@ -36,7 +36,7 @@ def test_ndcg_same_as_sklearn():
         np.testing.assert_almost_equal(ndcg_sklearn, ndcg_implemented)
 
 
-def test_map_ndcg_y_binary():
+def test_map_ndcg_as_expected_binary_rel():
     liked_items = np.array([100, 10, 50, 0, 11, 22, 33, 44, 55, 66])
     # case 1: hit at item_id 100, 10
     reco_items = np.array([2, 3, 4, 100, 10])
