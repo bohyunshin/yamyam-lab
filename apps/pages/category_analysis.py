@@ -1,8 +1,9 @@
-import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from components.utils import load_data
+import streamlit as st
+
+from apps.components.utils import load_data
 
 
 def create_category_treemap(diner_df: pd.DataFrame) -> go.Figure:

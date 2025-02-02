@@ -1,18 +1,19 @@
-import streamlit as st
 import pandas as pd
-from components.utils import (
-    load_data,
-    get_reviewer_info,
-    calculate_menu_price_avg,
-    analyze_menu_frequency,
-    get_category_stats,
-    get_average_scores,
-)
-from components.plots import (
+import streamlit as st
+
+from apps.components.plots import (
     create_category_bar_chart,
     create_menu_frequency_chart,
     create_scores_comparison_chart,
     create_time_series_chart,
+)
+from apps.components.utils import (
+    analyze_menu_frequency,
+    calculate_menu_price_avg,
+    get_average_scores,
+    get_category_stats,
+    get_reviewer_info,
+    load_data,
 )
 
 

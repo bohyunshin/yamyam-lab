@@ -1,7 +1,8 @@
-import plotly.graph_objects as go
-import plotly.express as px
-import pandas as pd
 from typing import Dict
+
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 
 
 def create_category_bar_chart(

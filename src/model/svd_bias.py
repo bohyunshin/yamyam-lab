@@ -3,8 +3,8 @@ from typing import Dict, List
 import numpy as np
 import torch
 import torch.nn as nn
-from torch import Tensor
 from numpy.typing import NDArray
+from torch import Tensor
 
 from evaluation.metric import ranked_precision, ranking_metrics_at_k
 from tools.utils import convert_tensor, safe_divide

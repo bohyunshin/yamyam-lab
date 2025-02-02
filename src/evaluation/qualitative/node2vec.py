@@ -1,16 +1,16 @@
-from typing import Dict, Tuple, List
 import pickle
-import networkx as nx
-from numpy.typing import NDArray
+from typing import Dict, List, Tuple
 
+import networkx as nx
 import torch
+from numpy.typing import NDArray
 from torch import Tensor
 
+from constant.evaluation.qualitative import QualitativeReviewerId
 from embedding.node2vec import Model
 from evaluation.qualitative.base_qualitative_evaluation import BaseQualitativeEvaluation
-from tools.utils import convert_tensor
 from tools.parse_args import parse_args_eval
-from constant.evaluation.qualitative import QualitativeReviewerId
+from tools.utils import convert_tensor
 
 
 class Node2VecQualitativeEvaluation(BaseQualitativeEvaluation):
@@ -72,6 +72,7 @@ class Node2VecQualitativeEvaluation(BaseQualitativeEvaluation):
 
 if __name__ == "__main__":
     import traceback
+
     from tools.logger import setup_logger
 
     args = parse_args_eval()

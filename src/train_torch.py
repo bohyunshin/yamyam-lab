@@ -1,22 +1,22 @@
-import os
 import copy
-import traceback
 import importlib
+import os
+import traceback
 from argparse import ArgumentParser
 
 import torch
 from torch import optim
 
+from candidate.near import NearCandidateGenerator
+from constant.candidate.near import MAX_DISTANCE_KM
+from constant.preprocess.preprocess import MIN_REVIEWS
+from constant.save.file_name import FileName
+from loss.custom import svd_loss
 from preprocess.preprocess import (
     prepare_torch_dataloader,
     train_test_split_stratify,
 )
-from candidate.near import NearCandidateGenerator
-from loss.custom import svd_loss
 from tools.logger import setup_logger
-from constant.preprocess.preprocess import MIN_REVIEWS
-from constant.candidate.near import MAX_DISTANCE_KM
-from constant.save.file_name import FileName
 
 
 def main(args: ArgumentParser.parse_args):

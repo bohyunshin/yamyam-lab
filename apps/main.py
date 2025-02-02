@@ -1,7 +1,8 @@
 import streamlit as st
-from pages.reviewer_analysis import reviewer_analysis_page
-from pages.diner_analysis import diner_analysis_page
-from pages.category_analysis import category_analysis_page
+
+from apps.pages.category_analysis import category_analysis_page
+from apps.pages.diner_analysis import diner_analysis_page
+from apps.pages.reviewer_analysis import reviewer_analysis_page
 
 st.set_page_config(page_title="맛집 분석 대시보드", page_icon="🍽️", layout="wide")
 

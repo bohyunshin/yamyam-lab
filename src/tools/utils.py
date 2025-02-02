@@ -1,6 +1,6 @@
-from typing import Union, List, Dict
 import os
 from collections import defaultdict
+from typing import Dict, List, Union
 
 from torch import Tensor
 

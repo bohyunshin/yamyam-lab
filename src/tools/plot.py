@@ -1,13 +1,13 @@
-from typing import Dict, Any, List
 import os
+from typing import Any, Dict, List
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
 
 from constant.evaluation.recommend import (
-    TOP_K_VALUES_FOR_PRED,
     TOP_K_VALUES_FOR_CANDIDATE,
+    TOP_K_VALUES_FOR_PRED,
 )
 from constant.metric.metric import Metric, NearCandidateMetric
 

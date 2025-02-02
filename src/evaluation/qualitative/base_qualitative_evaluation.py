@@ -1,12 +1,12 @@
-from abc import ABC, abstractmethod
-from typing import Dict, Tuple, List
 import os
-import pandas as pd
-from prettytable import PrettyTable
+from abc import ABC, abstractmethod
+from typing import Dict, List, Tuple
 
+import pandas as pd
 import torch
-from torch import Tensor
 from numpy.typing import NDArray
+from prettytable import PrettyTable
+from torch import Tensor
 
 DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../data")
 

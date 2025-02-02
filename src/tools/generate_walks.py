@@ -1,13 +1,13 @@
-from typing import Dict, Any, List, Union
 import random
-from tqdm import tqdm
-import numpy as np
-from numpy.typing import NDArray
-import networkx as nx
 from collections import defaultdict
+from typing import Any, Dict, List, Union
 
+import networkx as nx
+import numpy as np
 import torch
+from numpy.typing import NDArray
 from torch import Tensor
+from tqdm import tqdm
 
 from constant.embedding.node2vec import TransitionKey
 

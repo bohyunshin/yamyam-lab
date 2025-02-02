@@ -1,6 +1,7 @@
-import streamlit as st
 import pandas as pd
-from components.utils import load_data
+import streamlit as st
+
+from apps.components.utils import load_data
 
 
 def diner_analysis_page():

@@ -1,18 +1,18 @@
 from abc import abstractmethod
-from typing import List, Union, Tuple, Dict
-import torch
-import numpy as np
-from numpy.typing import NDArray
+from typing import Dict, List, Tuple, Union
 
-from torch import Tensor
+import numpy as np
+import torch
 import torch.nn as nn
+from numpy.typing import NDArray
+from torch import Tensor
 from torch.utils.data import DataLoader
 
 from constant.device.device import DEVICE
-from constant.metric.metric import Metric, NearCandidateMetric
 from constant.evaluation.recommend import RECOMMEND_BATCH_SIZE
+from constant.metric.metric import Metric, NearCandidateMetric
+from evaluation.metric import ranked_precision, ranking_metrics_at_k
 from tools.utils import convert_tensor, safe_divide
-from evaluation.metric import ranking_metrics_at_k, ranked_precision
 
 
 class BaseEmbedding(nn.Module):

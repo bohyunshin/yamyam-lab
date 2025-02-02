@@ -1,6 +1,6 @@
 from typing import List, Tuple, Union
-import networkx as nx
 
+import networkx as nx
 import torch
 from torch import Tensor
 from torch.nn import Embedding
