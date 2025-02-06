@@ -92,6 +92,8 @@ class Model(BaseEmbedding):
         Sample negative with uniform sampling.
         In word2vec objective function, to reduce computation burden, negative sampling
         is performed and approximate denominator of probability.
+        In metapath2vec, heterogeneous negative sampling is performed reflecting meta value
+        in positive samples.
 
         Args:
             batch (Tensor): A batch of node ids.
@@ -133,6 +135,8 @@ class Model(BaseEmbedding):
     def loss(self, pos_rw: Tensor, neg_rw: Tensor) -> Tensor:
         """
         Computes word2vec skip-gram based loss.
+        In metapath2vec, pos_rw is passed with padded values. Therefore, this should be
+        removed when calculating loss. This function do this using `self.meta_path_count`.
 
         Args:
              pos_rw (Tensor): Node ids of positive samples

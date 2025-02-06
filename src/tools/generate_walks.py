@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, Tuple
 import random
 from tqdm import tqdm
 import numpy as np
@@ -147,7 +147,43 @@ def precompute_probabilities(
 def precompute_probabilities_metapath(
         graph: nx.Graph,
         meta_field: str,
-):
+) -> Dict[int, Dict[str, Dict[str, List[int]]]]:
+    """
+    Precomputes probability when using metapath.
+    Note that there are not any parameters p and q which controls bias in random walk.
+    In other words, for metapath2vec, random walk categorized by meta is performed.
+    To do this, this function precompute uniform probabilities for each node.
+
+    Args:
+        graph (nx.Graph): Networkx graph object passed from preprocessing step.
+        meta_field (str): Name of meta field in nx.Graph.
+
+    Returns (Dict[int, Dict[str, Dict[str, List[int | float]]]]):
+        Key is node id, corresponding is precomputed probabilities.
+        For example,
+        {
+            0: {
+                "user": {
+                    "neighbors": [1, 2, 3],
+                    "prob": [1/3, 1/3, 1/3],
+                }
+                "diner": {
+                    "neighbors": [4],
+                    "prob": [1],
+                }
+                "category": {
+                    "neighbors": [],
+                    "prob": [],
+                }
+            }
+        }
+        Above example shows precomputed probabilities for node_id = 0.
+        For node_id = 0,
+        neighbor nodes with `user` meta is [1, 2, 3] and
+        neighbor nodes with `diner` meta is [4] and
+        neighbor nodes with `category` meta is [].
+        Note that uniform probabilities are set.
+    """
     nodes_without_meta = [
         node for node in graph.nodes()
         if meta_field not in graph.nodes[node]
@@ -182,7 +218,26 @@ def generate_walks_metapath(
         meta_path: List[List[str]],
         meta_field: str,
         walks_per_node: int,
-):
+) -> Tuple[Tensor, List[Tuple, int]]:
+    """
+    Generate walks given meta_path.
+    For each of meta_path, generate random walk based on precomputed probabilities.
+    If there are not any nodes that satisfy next meta information, do not include this sequence.
+
+    Args:
+        node_ids (Union[List[int], NDArray]): List of node_ids.
+        graph (nx.Graph): Given networkx graph
+        d_graph (Dict[int, Dict[str, Dict[str, List[int]]]]): Precomputed probabilities.
+        meta_path (List[List[str]]): List of meta path. For example,
+            [ ["user","diner","user","diner"], ["user","diner","category","diner","user"] ] shows
+            two meta_paths consisting of different meta values.
+        meta_field (str): Name of meta field.
+        walks_per_node (int): Number of sequences per node.
+
+    Returns (Tuple[Tensor, List[Tuple, int]]):
+        Concatenated tensor and meta paths count. Latter is used to unpad positive random walks
+        when calculating metapath loss.
+    """
     walks = []
     meta_path_count = []
     cnt = 0
