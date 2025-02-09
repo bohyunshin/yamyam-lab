@@ -211,9 +211,7 @@ def map_id_to_ascending_integer(
         }
         diner["metadata_id"] = diner["metadata_id"].map(meta_mapping)
         diner["metadata_id_neighbors"] = diner["metadata_id_neighbors"].map(
-            lambda x: [
-                meta_mapping[meta] for meta in x
-            ]
+            lambda x: [meta_mapping[meta] for meta in x]
         )
     else:
         meta_mapping = None
@@ -250,7 +248,7 @@ def preprocess_diner_data_for_candidate_generation(diner: pd.DataFrame) -> pd.Da
             row["diner_category_large"] + "_" + h3_index
             for h3_index in get_hexagon_neighbors(row["h3_index"], k=1)
         ],
-        axis=1
+        axis=1,
     )
     # get current h3_index and concat with meta field
     diner["metadata_id"] = diner.apply(
