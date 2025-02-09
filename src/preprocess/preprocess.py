@@ -170,6 +170,7 @@ def map_id_to_ascending_integer(
         diner (pd.DataFrame): Diner dataset.
         is_graph_model (bool): Indicator whether target model is graph based model or not.
             When set true, all the mapped id should be unique.
+        category_column_for_meta (str): Category column name which will be used to generate meta for each node.
 
     Returns (Dict[str, Any]):
         Mapped result.
@@ -241,6 +242,7 @@ def preprocess_diner_data_for_candidate_generation(
 
     Args:
         diner (pd.DataFrame): Diner dataset
+        category_column_for_meta (str): Category column name which will be used to generate meta for each node.
 
     Returns (pd.DataFrame):
         Diner dataset with metadata added.
@@ -303,6 +305,7 @@ def train_test_split_stratify(
         stratify (str): reference column when stratifying review data.
         is_graph_model (bool): indicator whether using graph based model or not.
             When set true, all the mapped index should be unique in ascending order.
+        category_column_for_meta (str): Category column name which will be used to generate meta for each node.
         test (bool): indicator whether under pytest. when set true, use part of total dataset.
 
     Returns (Dict[str, Any]):
@@ -477,6 +480,9 @@ def prepare_networkx_undirected_graph(
         X_val (Tensor): input features used when validating model.
         y_val (Tensor): target features, which is usually used for edged weight in validation data.
         diner (pd.DataFrame): diner dataset consisting of diner_id and metadata_id.
+        user_mapping (Dict[int, int]): dictionary mapping original user_id to descending integer.
+        diner_mapping (Dict[int, int]): dictionary mapping original diner_id to descending integer.
+        meta_mapping (Dict[int, int]): dictionary mapping original meta_id to descending integer.
         weighted (bool): whether setting edge weight or not.
         use_metadata (bool): whether to use metadata or not.
 

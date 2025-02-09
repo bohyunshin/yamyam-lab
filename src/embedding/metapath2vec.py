@@ -30,6 +30,31 @@ class Model(BaseEmbedding):
         inference: bool = False,
         **kwargs,
     ):
+        """
+        Train node embedding based on meta path defined by user.
+
+        Metapath2vec differs from node2vec in several aspects.
+            - Node2vec is best suited for homogeneous graph,
+                whereas metapath2vec targets for heterogeneous graph.
+            - Node2vec performs biased random walk based on p,q parameter,
+                whereas metapath2vec performs complete random walk.
+            - Walk length of node2vec is defined with integer,
+                whereas that of metapath2vec is defined with `meta_path` parameter.
+
+        Args:
+            user_ids (Tensor): List of user_ids in given graph.
+            diner_ids (Tensor): List of diner_ids in given graph.
+            top_k_values (List[int]): List of k values used when recommending items to users.
+            graph (nx.Graph): Defined networkx graph object.
+            embedding_dim (int): Dimension of each node.
+            num_nodes (int): Total numer of nodes in given graph.
+            meta_path (List[str]): Meta path to generate walks.
+            meta_field (str): Field name used in graph object.
+            walks_per_node (int): Number of walks per each node.
+            num_negative_samples (int): Number of negative samples per each positive sample.
+            inference (bool): Indicator whether it is inference mode or not.
+            **kwargs:
+        """
         super().__init__(
             user_ids=user_ids,
             diner_ids=diner_ids,
