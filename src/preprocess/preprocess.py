@@ -233,8 +233,8 @@ def map_id_to_ascending_integer(
 
 
 def preprocess_diner_data_for_candidate_generation(
-        diner: pd.DataFrame,
-        category_column_for_meta: str = None,
+    diner: pd.DataFrame,
+    category_column_for_meta: str = None,
 ) -> pd.DataFrame:
     """
     Additional preprocessing when metadata is integrated to graph based model.

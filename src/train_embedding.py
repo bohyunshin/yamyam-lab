@@ -44,7 +44,9 @@ def main(args: ArgumentParser.parse_args) -> None:
             logger.info(f"q: {args.q}")
         elif args.model == "metapath2vec":
             logger.info(f"defined meta_path: {args.meta_path}")
-            logger.info(f"category column for node meta: {args.category_column_for_meta}")
+            logger.info(
+                f"category column for node meta: {args.category_column_for_meta}"
+            )
         logger.info(f"result path: {args.result_path}")
         logger.info(f"test: {args.test}")
 

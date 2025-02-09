@@ -51,7 +51,9 @@ def parse_args_embedding():
 
     # metapath2vec parameter
     parser.add_argument("--meta_path", type=parse_nested_list, default=[])
-    parser.add_argument("--category_column_for_meta", type=str, default="diner_category_large")
+    parser.add_argument(
+        "--category_column_for_meta", type=str, default="diner_category_large"
+    )
 
     return parser.parse_args()
 
