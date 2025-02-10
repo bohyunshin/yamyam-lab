@@ -133,7 +133,9 @@ class Model(BaseEmbedding):
         batch_np = batch.numpy()
 
         # Get meta values for all nodes in batch at once
-        meta_values = np.array([self.graph.nodes[node][self.meta_field] for node in batch_np])
+        meta_values = np.array(
+            [self.graph.nodes[node][self.meta_field] for node in batch_np]
+        )
 
         # Pre-allocate result tensor
         result = torch.empty((len(batch), self.num_negative_samples), dtype=torch.long)
@@ -152,9 +154,7 @@ class Model(BaseEmbedding):
 
             # Generate random indices for all instances of this meta value at once
             sample_indices = np.random.randint(
-                0, pool_size,
-                size=(count, self.num_negative_samples),
-                dtype=np.int64
+                0, pool_size, size=(count, self.num_negative_samples), dtype=np.int64
             )
 
             # Convert pool indices to node IDs
