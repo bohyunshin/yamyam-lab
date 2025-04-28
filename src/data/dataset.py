@@ -31,6 +31,7 @@ class DatasetLoader:
         random_state: int = 42,
         stratify: str = "reviewer_id",
         sampling_type: str = "popularity",
+        is_timeseries: bool = False,
         is_graph_model: bool = False,
         is_candidate_dataset: bool = False,
         category_column_for_meta: str = "diner_category_large",
@@ -62,6 +63,7 @@ class DatasetLoader:
         self.random_state = random_state
         self.stratify = stratify
         self.is_graph_model = is_graph_model
+        self.is_timeseries = is_timeseries
         self.is_candidate_dataset = is_candidate_dataset
         self.category_column_for_meta = category_column_for_meta
         self.test = test
@@ -125,6 +127,47 @@ class DatasetLoader:
         )
         return train, val
 
+    def train_test_split_timeseries(
+        self: Self, review: pd.DataFrame
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Split data into train and validation sets based on time series order.
+        This ensures that earlier reviews are in the training set and later reviews are in the validation set.
+
+        Args:
+            review: pd.DataFrame
+
+        Returns (Tuple[pd.DataFrame, pd.DataFrame]):
+            train, val
+        """
+        # Convert review date to datetime
+        review["reviewer_review_date"] = pd.to_datetime(review["reviewer_review_date"])
+
+        # Group by reviewer and sort by date within each group
+        review = review.sort_values(["reviewer_id", "reviewer_review_date"])
+
+        # Create train/val splits for each reviewer based on time
+        train_indices = []
+        val_indices = []
+
+        for reviewer_id in review["reviewer_id"].unique():
+            reviewer_mask = review["reviewer_id"] == reviewer_id
+            reviewer_reviews = review[reviewer_mask]
+
+            # Calculate split point for this reviewer
+            split_idx = int(len(reviewer_reviews) * (1 - self.test_size))
+
+            # Get indices for train/val split
+            reviewer_indices = reviewer_reviews.index
+            train_indices.extend(reviewer_indices[:split_idx])
+            val_indices.extend(reviewer_indices[split_idx:])
+
+        # Split the data using the collected indices
+        train = review.loc[train_indices]
+        val = review.loc[val_indices]
+
+        return train, val
+
     def prepare_train_val_dataset(
         self: Self,
         is_rank: bool = False,
@@ -160,7 +203,11 @@ class DatasetLoader:
         }
 
         # Split data into train and validation
-        train, val = self.train_test_split_stratify(review)
+        train, val = (
+            self.train_test_split_timeseries(review)
+            if self.is_timeseries
+            else self.train_test_split_stratify(review)
+        )
 
         # Feature engineering
         user_feature, diner_feature, diner_meta_feature = build_feature(
