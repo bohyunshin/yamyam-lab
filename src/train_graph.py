@@ -21,7 +21,7 @@ from tools.plot import plot_metric_at_k
 from tools.zip import zip_files_in_directory
 
 ROOT_PATH = os.path.join(os.path.dirname(__file__), "..")
-CONFIG_PATH = os.path.join(ROOT_PATH, "./config/embedding/{model}.yaml")
+CONFIG_PATH = os.path.join(ROOT_PATH, "./config/models/graph/{model}.yaml")
 RESULT_PATH = os.path.join(ROOT_PATH, "./result/{test}/{model}/{dt}")
 ZIP_PATH = os.path.join(ROOT_PATH, "./zip/{test}/{model}/{dt}")
 
@@ -189,7 +189,7 @@ def main(args: ArgumentParser.parse_args) -> None:
         )
 
         # import embedding module
-        model_path = f"embedding.{args.model}"
+        model_path = f"model.graph.{args.model}"
         model_module = importlib.import_module(model_path).Model
         model = model_module(
             user_ids=torch.tensor(list(data["user_mapping"].values())).to(args.device),
