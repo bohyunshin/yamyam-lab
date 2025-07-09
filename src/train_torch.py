@@ -6,7 +6,6 @@ import traceback
 from argparse import ArgumentParser
 from datetime import datetime
 
-import pandas as pd
 import torch
 from torch import optim
 
@@ -16,9 +15,8 @@ from data.dataset import (
 )
 from evaluation.metric_calculator import SVDBiasMetricCalculator
 from loss.custom import svd_loss
-from preprocess.preprocess import prepare_torch_dataloader
 from tools.config import load_yaml
-from tools.logger import setup_logger
+from tools.logger import common_logging, setup_logger
 from tools.plot import plot_metric_at_k
 
 ROOT_PATH = os.path.join(os.path.dirname(__file__), "..")
@@ -56,16 +54,6 @@ def main(args: ArgumentParser.parse_args):
         logger.info(f"test: {args.test}")
         logger.info(f"training results will be saved in {result_path}")
 
-        logger.info(
-            f"train dataset period: {config.preprocess.data.train_time_point} <= dt < {config.preprocess.data.val_time_point}"
-        )
-        logger.info(
-            f"val dataset period: {config.preprocess.data.val_time_point} <= dt < {config.preprocess.data.test_time_point}"
-        )
-        logger.info(
-            f"test dataset period: {config.preprocess.data.test_time_point} <= dt < {config.preprocess.data.end_time_point}"
-        )
-
         # generate dataloader for pytorch training pipeline
         data_loader = DatasetLoader(
             data_config=DataConfig(
@@ -79,73 +67,17 @@ def main(args: ArgumentParser.parse_args):
                 test=args.test,
             ),
         )
-        data = data_loader.prepare_train_val_dataset()
+        data = data_loader.prepare_train_val_dataset(is_tensor=True)
 
-        logger.info("######## Number of reviews statistics ########")
-        logger.info(f"Number of reviews in train: {data['X_train'].size(0)}")
-        logger.info(f"Number of reviews in val: {data['X_val'].size(0)}")
-        logger.info(f"Number of reviews in test: {data['X_test'].size(0)}")
-
-        logger.info("######## Train data statistics ########")
-        logger.info(f"Number of users in train: {len(data['train_user_ids'])}")
-        logger.info(f"Number of diners in train: {len(data['train_diner_ids'])}")
-        logger.info(f"Number of feedbacks in train: {data['X_train'].size(0)}")
-        train_density = round(
-            100
-            * data["X_train"].size(0)
-            / (len(data["train_user_ids"]) * len(data["train_diner_ids"])),
-            4,
-        )
-        logger.info(f"Train data density: {train_density}%")
-
-        logger.info("######## Validation data statistics ########")
-        logger.info(f"Number of users in val: {len(data['val_user_ids'])}")
-        logger.info(f"Number of diners in val: {len(data['val_diner_ids'])}")
-        logger.info(f"Number of feedbacks in val: {data['X_val'].size(0)}")
-        val_density = round(
-            100
-            * data["X_val"].size(0)
-            / (len(data["val_user_ids"]) * len(data["val_diner_ids"])),
-            4,
-        )
-        logger.info(f"Validation data density: {val_density}%")
-
-        logger.info("######## Test data statistics ########")
-        logger.info(f"Number of users in test: {len(data['test_user_ids'])}")
-        logger.info(f"Number of diners in test: {len(data['test_diner_ids'])}")
-        logger.info(f"Number of feedbacks in test: {data['X_test'].size(0)}")
-        test_density = round(
-            100
-            * data["X_test"].size(0)
-            / (len(data["test_user_ids"]) * len(data["test_diner_ids"])),
-            4,
-        )
-        logger.info(f"Test data density: {test_density}%")
-
-        logger.info(
-            "######## Warm / Cold users analysis in validation and test dataset ########"
-        )
-        logger.info(
-            f"Number of users within train, but not in val: {len(set(data['train_user_ids']) - set(data['val_user_ids']))}"
-        )
-        logger.info(
-            f"Number of users within train, but not in test: {len(set(data['train_user_ids']) - set(data['test_user_ids']))}"
-        )
-        logger.info(
-            f"Number of warm start users in val: {len(data['val_warm_start_user_ids'])}"
-        )
-        logger.info(
-            f"Number of cold start users in val: {len(data['val_cold_start_user_ids'])}"
-        )
-        logger.info(
-            f"Number of warm start users in test: {len(data['test_warm_start_user_ids'])}"
-        )
-        logger.info(
-            f"Number of cold start users in test: {len(data['test_cold_start_user_ids'])}"
+        common_logging(
+            config=config,
+            data=data,
+            logger=logger,
         )
 
-        train_dataloader, val_dataloader = prepare_torch_dataloader(
-            data["X_train"], data["y_train"], data["X_val"], data["y_val"]
+        train_dataloader, val_dataloader = (
+            data["train_dataloader"],
+            data["val_dataloader"],
         )
 
         # for qualitative eval
@@ -167,7 +99,7 @@ def main(args: ArgumentParser.parse_args):
             embedding_dim=args.embedding_dim,
             top_k_values=top_k_values,
             model_name=args.model,
-            mu=data["y_train"].mean(),
+            mu=torch.tensor(data["y_train"].mean(), dtype=torch.float32),
         ).to(args.device)
 
         optimizer = optim.SGD(model.parameters(), lr=args.lr)
@@ -242,15 +174,9 @@ def main(args: ArgumentParser.parse_args):
             # calculate metric for test data with warm / cold / all users separately
             metric_dict = (
                 metric_calculator.generate_recommendations_and_calculate_metric(
-                    X_train=pd.DataFrame(
-                        data["X_train"], columns=["diner_idx", "reviewer_id"]
-                    ),
-                    X_val_warm_users=pd.DataFrame(
-                        data["X_val_warm_users"], columns=["diner_idx", "reviewer_id"]
-                    ),
-                    X_val_cold_users=pd.DataFrame(
-                        data["X_val_cold_users"], columns=["diner_idx", "reviewer_id"]
-                    ),
+                    X_train=data["X_train"],
+                    X_val_warm_users=data["X_val_warm_users"],
+                    X_val_cold_users=data["X_val_cold_users"],
                     most_popular_diner_ids=data["most_popular_diner_ids"],
                     filter_already_liked=True,
                 )
@@ -346,13 +272,9 @@ def main(args: ArgumentParser.parse_args):
 
         # calculate metric for test data with warm / cold / all users separately
         metric_dict = metric_calculator.generate_recommendations_and_calculate_metric(
-            X_train=pd.DataFrame(data["X_train"], columns=["diner_idx", "reviewer_id"]),
-            X_val_warm_users=pd.DataFrame(
-                data["X_test_warm_users"], columns=["diner_idx", "reviewer_id"]
-            ),
-            X_val_cold_users=pd.DataFrame(
-                data["X_test_cold_users"], columns=["diner_idx", "reviewer_id"]
-            ),
+            X_train=data["X_train"],
+            X_val_warm_users=data["X_test_warm_users"],
+            X_val_cold_users=data["X_test_cold_users"],
             most_popular_diner_ids=data["most_popular_diner_ids"],
             filter_already_liked=True,
         )
