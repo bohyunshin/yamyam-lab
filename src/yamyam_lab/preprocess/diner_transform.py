@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import yaml
@@ -10,6 +10,229 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
+
+
+class MiddleCategorySimplifier:
+    """
+    중분류 카테고리를 간소화하는 전처리기
+
+    원본 중분류를 간소화된 중분류로 변환합니다.
+    브랜드/체인점 중심 분류를 음식 종류 중심으로 정리합니다.
+
+    Args:
+        config_root_path (str): Config 파일의 root 경로
+        data_path (str): Data 파일의 root 경로
+    """
+
+    def __init__(
+        self,
+        config_root_path: Optional[str] = None,
+        data_path: Optional[str] = None,
+        logger: logging.Logger = logger,
+    ):
+        self.config_root_path = Path(config_root_path)
+        self.data_path = Path(data_path)
+        self.logger = logger
+
+        # 간소화 매핑 로드
+        self.simplify_mapping = self._load_simplify_mapping()
+
+    def _load_simplify_mapping(self) -> Dict[str, Dict[str, list]]:
+        """
+        간소화 매핑 규칙을 YAML 파일에서 로드합니다.
+
+        Returns:
+            Dict[str, Dict[str, list]]: 간소화 매핑 딕셔너리
+
+        Raises:
+            FileNotFoundError: YAML 파일이 없거나 simplify_mapping이 없는 경우
+        """
+        config_path = self.config_root_path / "data" / "category_mappings.yaml"
+
+        if not config_path.exists():
+            raise FileNotFoundError(f"Category mappings file not found: {config_path}")
+
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                mappings = yaml.safe_load(f)
+
+            if "simplify_mapping" not in mappings:
+                raise ValueError(
+                    f"'simplify_mapping' section not found in {config_path}"
+                )
+
+            self.logger.info(f"Loaded simplify_mapping from {config_path}")
+            return mappings["simplify_mapping"]
+
+        except Exception as e:
+            self.logger.error(
+                f"Failed to load simplify_mapping from {config_path}: {e}"
+            )
+            raise
+
+    def simplify_middle_category(
+        self, large_category: str, middle_category: str
+    ) -> str:
+        """
+        원본 중분류를 간소화된 중분류로 변환합니다.
+
+        Args:
+            large_category: 대분류
+            middle_category: 원본 중분류
+
+        Returns:
+            간소화된 중분류 (매핑되지 않으면 원본 반환)
+        """
+        if pd.isna(middle_category) or middle_category == "":
+            return middle_category
+
+        # 대분류가 "패밀리레스토랑" 또는 "샐러드"인 경우 "양식" 섹션의 매핑을 사용
+        if large_category in ["패밀리레스토랑", "샐러드"]:
+            large_category = "양식"
+
+        # 먼저 현재 대분류의 매핑에서 찾기
+        large_mapping = self.simplify_mapping.get(large_category, {})
+
+        # 정확히 일치하는 경우
+        for simplified, originals in large_mapping.items():
+            if middle_category == originals:
+                return simplified
+
+        # 부분 일치 확인 (키워드 포함)
+        for simplified, originals in large_mapping.items():
+            for original in originals:
+                if (
+                    original.lower() in str(middle_category).lower()
+                    or str(middle_category).lower() in original.lower()
+                ):
+                    return simplified
+
+        # 현재 대분류에서 찾지 못한 경우, 모든 대분류의 매핑에서 찾기
+        # (원본 데이터의 대분류가 잘못된 경우 대비)
+        for cat, cat_mapping in self.simplify_mapping.items():
+            if cat == large_category:
+                continue  # 이미 확인했음
+            for simplified, originals in cat_mapping.items():
+                for original in originals:
+                    if (
+                        original.lower() in str(middle_category).lower()
+                        or str(middle_category).lower() in original.lower()
+                    ):
+                        return simplified
+
+        # 매핑되지 않으면 원본 반환
+        return middle_category
+
+    def process(
+        self,
+        category_df: Optional[pd.DataFrame] = None,
+        inplace: bool = True,
+    ) -> pd.DataFrame:
+        """
+        카테고리 데이터프레임의 중분류를 간소화합니다.
+        원본 diner_category_middle 컬럼을 간소화된 값으로 직접 변경합니다.
+
+        Args:
+            category_df: 카테고리 데이터프레임 (None이면 파일에서 로드)
+            inplace: 원본 컬럼을 직접 수정할지 여부 (기본값: True)
+
+        Returns:
+            간소화된 중분류가 적용된 데이터프레임
+        """
+        if category_df is None:
+            category_df = pd.read_csv(self.data_path / "diner_category_raw.csv")
+        else:
+            category_df = category_df.copy() if not inplace else category_df
+
+        original_values = category_df["diner_category_middle"].copy()
+
+        if self.logger:
+            self.logger.info(f"Original category_df shape: {category_df.shape}")
+            self.logger.info(
+                f"Null middle categories: {category_df['diner_category_middle'].isna().sum()}"
+            )
+
+        # 대분류가 "간식"이고 중분류가 "닭강정"인 경우 "치킨" > "닭강정"으로 변경 (간소화 전에 처리)
+        chicken_gangjeong_mask = (category_df["diner_category_large"] == "간식") & (
+            category_df["diner_category_middle"] == "닭강정"
+        )
+        if chicken_gangjeong_mask.any():
+            category_df.loc[chicken_gangjeong_mask, "diner_category_large"] = "치킨"
+            if self.logger:
+                self.logger.info(
+                    f"Changed large category from '간식' to '치킨' for {chicken_gangjeong_mask.sum()} rows "
+                    f"with middle category '닭강정' (before simplification)"
+                )
+
+        # 간소화 적용 - 원본 컬럼을 직접 변경
+        category_df["diner_category_middle"] = category_df.apply(
+            lambda row: self.simplify_middle_category(
+                row["diner_category_large"], row["diner_category_middle"]
+            ),
+            axis=1,
+        )
+
+        # 대분류가 "치킨"이고 간소화 후 중분류가 "디저트"가 된 경우 (원본이 "닭강정"이었을 수 있음)
+        # 중분류를 "닭강정"으로 복원
+        chicken_dessert_mask = (category_df["diner_category_large"] == "치킨") & (
+            category_df["diner_category_middle"] == "디저트"
+        )
+        # 원본이 "닭강정"이었던 경우만 처리
+        original_chicken_gangjeong = original_values == "닭강정"
+        chicken_gangjeong_restore_mask = (
+            chicken_dessert_mask & original_chicken_gangjeong
+        )
+        if chicken_gangjeong_restore_mask.any():
+            category_df.loc[chicken_gangjeong_restore_mask, "diner_category_middle"] = (
+                "닭강정"
+            )
+            if self.logger:
+                self.logger.info(
+                    f"Restored middle category to '닭강정' for {chicken_gangjeong_restore_mask.sum()} rows "
+                    f"with large category '치킨' (originally was '닭강정')"
+                )
+
+        # 샤브샤브, 칼국수인 경우 대분류를 한식으로 변경
+        shabu_shabu_mask = category_df["diner_category_middle"].isin(
+            ["샤브샤브", "칼국수"]
+        )
+        if shabu_shabu_mask.any():
+            category_df.loc[shabu_shabu_mask, "diner_category_large"] = "한식"
+            if self.logger:
+                self.logger.info(
+                    f"Changed large category to '한식' for {shabu_shabu_mask.sum()} rows "
+                    f"with middle category '샤브샤브' or '칼국수'"
+                )
+
+        # 대분류가 "샐러드"인 경우 "양식"으로 변경
+        salad_mask = category_df["diner_category_large"] == "샐러드"
+        if salad_mask.any():
+            category_df.loc[salad_mask, "diner_category_large"] = "양식"
+            if self.logger:
+                self.logger.info(
+                    f"Changed large category from '샐러드' to '양식' for {salad_mask.sum()} rows"
+                )
+
+        # 패밀리레스토랑, 스테이크하우스, 이탈리안인 경우 대분류를 양식으로 변경
+        family_restaurant_mask = category_df["diner_category_middle"].isin(
+            ["패밀리레스토랑", "스테이크하우스", "이탈리안"]
+        )
+        if family_restaurant_mask.any():
+            original_large_values = category_df.loc[
+                family_restaurant_mask, "diner_category_large"
+            ].copy()
+            category_df.loc[family_restaurant_mask, "diner_category_large"] = "양식"
+            if self.logger:
+                changed_large_count = (
+                    original_large_values
+                    != category_df.loc[family_restaurant_mask, "diner_category_large"]
+                ).sum()
+                self.logger.info(
+                    f"Changed large category to '양식' for {changed_large_count} rows "
+                    f"with middle category '패밀리레스토랑', '스테이크하우스', or '이탈리안'"
+                )
+
+        return category_df
 
 
 class CategoryProcessor:
