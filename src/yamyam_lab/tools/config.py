@@ -13,7 +13,13 @@ def load_yaml(path: str):
 
 
 def load_configs(model: str, config_root_path: str = None) -> Tuple[EasyDict, EasyDict]:
-    if model in ["node2vec", "metapath2vec", "graphsage", "lightgcn"]:
+    if model in [
+        "node2vec",
+        "metapath2vec",
+        "graphsage",
+        "lightgcn",
+        "diner_embedding",
+    ]:
         model_type = "graph"
     elif model in ["svd_bias", "als"]:
         model_type = "mf"

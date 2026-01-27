@@ -37,7 +37,13 @@ def parse_args_graph():
         "--model",
         type=str,
         required=True,
-        choices=["node2vec", "metapath2vec", "graphsage", "lightgcn"],
+        choices=[
+            "node2vec",
+            "metapath2vec",
+            "graphsage",
+            "lightgcn",
+            "diner_embedding",
+        ],
     )
     parser.add_argument("--device", type=str, default="cpu", choices=["cpu", "cuda"])
     parser.add_argument("--batch_size", type=int, default=128)
@@ -115,6 +121,94 @@ def parse_args_als():
     # candidate generation parameter for two-stage reco
     parser.add_argument("--save_candidate", action="store_true", required=False)
     parser.add_argument("--reusable_token_path", type=str, required=False)
+    return parser.parse_args()
+
+
+def parse_args_diner_embedding():
+    """Parse arguments for diner embedding model training."""
+    parser = argparse.ArgumentParser()
+
+    # Model selection
+    parser.add_argument(
+        "--model",
+        type=str,
+        default="diner_embedding",
+        choices=["diner_embedding"],
+    )
+
+    # Device and workers
+    parser.add_argument("--device", type=str, default="cpu", choices=["cpu", "cuda"])
+    parser.add_argument("--num_workers", type=int, default=4)
+
+    # Training hyperparameters
+    parser.add_argument("--batch_size", type=int, default=256)
+    parser.add_argument("--lr", type=float, default=0.001)
+    parser.add_argument("--weight_decay", type=float, default=1e-5)
+    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--patience", type=int, default=10)
+
+    # Model architecture
+    parser.add_argument("--embedding_dim", type=int, default=128)
+    parser.add_argument("--category_dim", type=int, default=128)
+    parser.add_argument("--menu_dim", type=int, default=256)
+    parser.add_argument("--review_dim", type=int, default=64)
+    parser.add_argument("--price_dim", type=int, default=32)
+    parser.add_argument("--num_attention_heads", type=int, default=4)
+    parser.add_argument("--dropout", type=float, default=0.1)
+
+    # KoBERT configuration
+    parser.add_argument("--kobert_model_name", type=str, default="monologg/kobert")
+    parser.add_argument(
+        "--use_precomputed_menu_embeddings", action="store_true", default=True
+    )
+
+    # Loss function
+    parser.add_argument("--margin", type=float, default=0.5)
+    parser.add_argument("--category_weight", type=float, default=0.1)
+    parser.add_argument("--gradient_clip", type=float, default=1.0)
+
+    # Hard negative mining
+    parser.add_argument("--num_hard_negatives", type=int, default=5)
+    parser.add_argument("--num_nearby_negatives", type=int, default=3)
+    parser.add_argument("--num_random_negatives", type=int, default=2)
+
+    # Data paths
+    parser.add_argument(
+        "--features_path",
+        type=str,
+        default="data/processed/diner_features.parquet",
+    )
+    parser.add_argument(
+        "--pairs_path",
+        type=str,
+        default="data/processed/training_pairs.parquet",
+    )
+    parser.add_argument(
+        "--val_pairs_path",
+        type=str,
+        default="data/processed/val_pairs.parquet",
+    )
+    parser.add_argument(
+        "--test_pairs_path",
+        type=str,
+        default="data/processed/test_pairs.parquet",
+    )
+    parser.add_argument(
+        "--category_mapping_path",
+        type=str,
+        default="data/processed/category_mapping.parquet",
+    )
+
+    # Output configuration
+    parser.add_argument("--result_path", type=str, default=None)
+    parser.add_argument("--config_root_path", type=str, default=None)
+    parser.add_argument("--postfix", type=str, default=None)
+    parser.add_argument("--test", action="store_true")
+    parser.add_argument("--random_seed", type=int, default=42)
+
+    # Candidate generation
+    parser.add_argument("--save_candidate", action="store_true")
+
     return parser.parse_args()
 
 
