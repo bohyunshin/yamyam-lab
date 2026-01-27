@@ -1,6 +1,36 @@
 ---
 name: ml-model-implementer
-description: "Use this agent when you need to implement machine learning model code based on specifications from ML model design agents. This includes translating model architecture designs into working code, implementing training loops, loss functions, data loaders, and model components while preserving the existing repository structure. Also use this agent when test code needs to be written for ML implementations.\\n\\nExamples:\\n\\n<example>\\nContext: The user has received model specifications from a design agent and needs implementation.\\nuser: \"I have the following model specification from the design agent: A transformer-based classifier with 6 layers, 8 attention heads, embedding dim 512, for text classification with 10 classes.\"\\nassistant: \"I'll use the Task tool to launch the ml-model-implementer agent to implement this transformer classifier according to the specifications.\"\\n<commentary>\\nSince specific ML model requirements have been provided from a design agent, use the ml-model-implementer agent to create the implementation.\\n</commentary>\\n</example>\\n\\n<example>\\nContext: The user needs to add a new model component to an existing ML pipeline.\\nuser: \"The design agent specified we need a custom attention mechanism with relative positional encoding for our existing model.\"\\nassistant: \"I'll launch the ml-model-implementer agent via the Task tool to implement this custom attention mechanism while maintaining compatibility with your existing pipeline.\"\\n<commentary>\\nSince this involves implementing a specific ML component based on design requirements, use the ml-model-implementer agent to handle the implementation.\\n</commentary>\\n</example>\\n\\n<example>\\nContext: The user needs tests for newly implemented ML code.\\nuser: \"We just implemented the new ResNet variant, now we need comprehensive tests for it.\"\\nassistant: \"I'll use the Task tool to launch the ml-model-implementer agent to create comprehensive test coverage for the ResNet implementation.\"\\n<commentary>\\nSince ML model tests are needed, the ml-model-implementer agent should be used as it handles both implementation and testing of ML code.\\n</commentary>\\n</example>"
+description: |
+  Use this agent when you need to implement machine learning model code based on specifications from ML model design agents. This includes translating model architecture designs into working code, implementing training loops, loss functions, data loaders, and model components while preserving the existing repository structure. Also use this agent when test code needs to be written for ML implementations.
+
+  Examples:
+
+  <example>
+  Context: The user has received model specifications from a design agent and needs implementation.
+  user: "I have the following model specification from the design agent: A transformer-based classifier with 6 layers, 8 attention heads, embedding dim 512, for text classification with 10 classes."
+  assistant: "I'll use the Task tool to launch the ml-model-implementer agent to implement this transformer classifier according to the specifications."
+  <commentary>
+  Since specific ML model requirements have been provided from a design agent, use the ml-model-implementer agent to create the implementation.
+  </commentary>
+  </example>
+
+  <example>
+  Context: The user needs to add a new model component to an existing ML pipeline.
+  user: "The design agent specified we need a custom attention mechanism with relative positional encoding for our existing model."
+  assistant: "I'll launch the ml-model-implementer agent via the Task tool to implement this custom attention mechanism while maintaining compatibility with your existing pipeline."
+  <commentary>
+  Since this involves implementing a specific ML component based on design requirements, use the ml-model-implementer agent to handle the implementation.
+  </commentary>
+  </example>
+
+  <example>
+  Context: The user needs tests for newly implemented ML code.
+  user: "We just implemented the new ResNet variant, now we need comprehensive tests for it."
+  assistant: "I'll use the Task tool to launch the ml-model-implementer agent to create comprehensive test coverage for the ResNet implementation."
+  <commentary>
+  Since ML model tests are needed, the ml-model-implementer agent should be used as it handles both implementation and testing of ML code.
+  </commentary>
+  </example>
 model: opus
 ---
 

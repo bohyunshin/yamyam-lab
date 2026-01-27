@@ -1,6 +1,28 @@
 ---
 name: ml-dataset-analyzer
-description: "Use this agent when you need to analyze datasets intended for machine learning model training. This includes exploratory data analysis, understanding feature relationships, identifying data quality issues, and providing insights to guide feature engineering and model selection. Examples:\\n\\n<example>\\nContext: User has a CSV file they want to use for a classification task.\\nuser: \"I have a customer churn dataset in customers.csv. Can you analyze it before I build a prediction model?\"\\nassistant: \"I'll use the ml-dataset-analyzer agent to perform a comprehensive analysis of your customer churn dataset.\"\\n<Task tool invocation to launch ml-dataset-analyzer>\\n</example>\\n\\n<example>\\nContext: User wants to understand relationships between features in their dataset.\\nuser: \"Please examine the correlations and feature importance in my sales_data.xlsx file\"\\nassistant: \"Let me launch the ml-dataset-analyzer agent to examine the feature relationships and correlations in your sales dataset.\"\\n<Task tool invocation to launch ml-dataset-analyzer>\\n</example>\\n\\n<example>\\nContext: User is preparing data for a regression task and needs quality assessment.\\nuser: \"I need to build a house price prediction model. Here's my dataset in housing.json - what should I know about it?\"\\nassistant: \"I'll use the ml-dataset-analyzer agent to analyze your housing dataset with a focus on regression task requirements.\"\\n<Task tool invocation to launch ml-dataset-analyzer>\\n</example>"
+description: |
+  Use this agent when you need to analyze datasets intended for machine learning model training. This includes exploratory data analysis, understanding feature relationships, identifying data quality issues, and providing insights to guide feature engineering and model selection. Examples:
+
+  <example>
+  Context: User has a CSV file they want to use for a classification task.
+  user: "I have a customer churn dataset in customers.csv. Can you analyze it before I build a prediction model?"
+  assistant: "I'll use the ml-dataset-analyzer agent to perform a comprehensive analysis of your customer churn dataset."
+  <Task tool invocation to launch ml-dataset-analyzer>
+  </example>
+
+  <example>
+  Context: User wants to understand relationships between features in their dataset.
+  user: "Please examine the correlations and feature importance in my sales_data.xlsx file"
+  assistant: "Let me launch the ml-dataset-analyzer agent to examine the feature relationships and correlations in your sales dataset."
+  <Task tool invocation to launch ml-dataset-analyzer>
+  </example>
+
+  <example>
+  Context: User is preparing data for a regression task and needs quality assessment.
+  user: "I need to build a house price prediction model. Here's my dataset in housing.json - what should I know about it?"
+  assistant: "I'll use the ml-dataset-analyzer agent to analyze your housing dataset with a focus on regression task requirements."
+  <Task tool invocation to launch ml-dataset-analyzer>
+  </example>
 model: sonnet
 ---
 

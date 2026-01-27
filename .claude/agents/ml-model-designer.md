@@ -1,6 +1,36 @@
 ---
 name: ml-model-designer
-description: "Use this agent when the user needs to select or design machine learning models for a specific problem or task. This agent should be invoked after the dataset-analyzer agent has provided information about the available dataset. Examples of when to use this agent:\\n\\n<example>\\nContext: The user has a classification problem and has already run the dataset-analyzer agent.\\nuser: \"I need to classify customer churn from my subscription data\"\\nassistant: \"Let me first analyze your dataset to understand what features are available.\"\\n<dataset-analyzer agent results showing features like user_id, subscription_length, usage_patterns, etc.>\\nassistant: \"Now let me use the ml-model-designer agent to recommend appropriate models based on your churn prediction task and the available features.\"\\n<commentary>\\nSince we have dataset analysis results and a clear ML task (binary classification for churn), use the ml-model-designer agent to recommend suitable models.\\n</commentary>\\n</example>\\n\\n<example>\\nContext: The user wants to build a recommendation system and dataset analysis is complete.\\nuser: \"I want to recommend products to users based on their purchase history\"\\nassistant: \"I have the dataset analysis showing user transactions, product categories, and timestamps. Let me use the ml-model-designer agent to suggest the best recommendation approaches.\"\\n<commentary>\\nThe user has a recommendation task with analyzed data. Use the ml-model-designer agent to propose collaborative filtering, neural recommendation models, or hybrid approaches based on the data characteristics.\\n</commentary>\\n</example>\\n\\n<example>\\nContext: The user needs to predict continuous values from sensor data.\\nuser: \"I need to predict equipment failure time from these sensor readings\"\\nassistant: \"Based on the dataset analysis showing time-series sensor data with 50 features and labeled failure events, I'll use the ml-model-designer agent to recommend regression and time-series models suitable for predictive maintenance.\"\\n<commentary>\\nThis is a regression/time-series prediction task. The ml-model-designer agent should consider both deep learning (LSTM, Transformer) and traditional approaches (XGBoost, Random Forest) given the data characteristics.\\n</commentary>\\n</example>"
+description: |
+  Use this agent when the user needs to select or design machine learning models for a specific problem or task. This agent should be invoked after the dataset-analyzer agent has provided information about the available dataset. Examples of when to use this agent:
+
+  <example>
+  Context: The user has a classification problem and has already run the dataset-analyzer agent.
+  user: "I need to classify customer churn from my subscription data"
+  assistant: "Let me first analyze your dataset to understand what features are available."
+  <dataset-analyzer agent results showing features like user_id, subscription_length, usage_patterns, etc.>
+  assistant: "Now let me use the ml-model-designer agent to recommend appropriate models based on your churn prediction task and the available features."
+  <commentary>
+  Since we have dataset analysis results and a clear ML task (binary classification for churn), use the ml-model-designer agent to recommend suitable models.
+  </commentary>
+  </example>
+
+  <example>
+  Context: The user wants to build a recommendation system and dataset analysis is complete.
+  user: "I want to recommend products to users based on their purchase history"
+  assistant: "I have the dataset analysis showing user transactions, product categories, and timestamps. Let me use the ml-model-designer agent to suggest the best recommendation approaches."
+  <commentary>
+  The user has a recommendation task with analyzed data. Use the ml-model-designer agent to propose collaborative filtering, neural recommendation models, or hybrid approaches based on the data characteristics.
+  </commentary>
+  </example>
+
+  <example>
+  Context: The user needs to predict continuous values from sensor data.
+  user: "I need to predict equipment failure time from these sensor readings"
+  assistant: "Based on the dataset analysis showing time-series sensor data with 50 features and labeled failure events, I'll use the ml-model-designer agent to recommend regression and time-series models suitable for predictive maintenance."
+  <commentary>
+  This is a regression/time-series prediction task. The ml-model-designer agent should consider both deep learning (LSTM, Transformer) and traditional approaches (XGBoost, Random Forest) given the data characteristics.
+  </commentary>
+  </example>
 model: sonnet
 ---
 
