@@ -626,7 +626,10 @@ def _generate_category_pairs(
     category_df: pd.DataFrame,
     max_pairs_per_category: int = 10000,
 ) -> List[Dict[str, Any]]:
-    """Generate pairs from same small category.
+    """Generate pairs from same middle category.
+
+    Uses middle category instead of small category because small category
+    often has too many missing values (nan/unknown).
 
     Args:
         category_df: Category DataFrame.
@@ -637,15 +640,30 @@ def _generate_category_pairs(
     """
     pairs = []
 
-    # Group by small category
-    if "diner_category_small" in category_df.columns:
+    # Group by middle category (more reliable than small category)
+    if "diner_category_middle" in category_df.columns:
+        category_col = "diner_category_middle"
+    elif "middle_category_id" in category_df.columns:
+        category_col = "middle_category_id"
+    elif "diner_category_small" in category_df.columns:
         category_col = "diner_category_small"
     elif "small_category_id" in category_df.columns:
         category_col = "small_category_id"
     else:
         return pairs
 
-    category_groups = category_df.groupby(category_col)["diner_idx"].apply(list)
+    # Filter out NaN categories first
+    filtered_df = category_df[category_df[category_col].notna()].copy()
+
+    # Filter out categories with more than 50% of total diners (likely "unknown")
+    category_counts = filtered_df[category_col].value_counts()
+    max_category_size = len(category_df) * 0.5
+    valid_categories = category_counts[
+        category_counts <= max_category_size
+    ].index.tolist()
+
+    filtered_df = filtered_df[filtered_df[category_col].isin(valid_categories)]
+    category_groups = filtered_df.groupby(category_col)["diner_idx"].apply(list)
 
     for category, diners in category_groups.items():
         if len(diners) < 2:
