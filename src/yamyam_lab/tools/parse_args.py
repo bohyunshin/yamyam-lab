@@ -125,7 +125,11 @@ def parse_args_als():
 
 
 def parse_args_diner_embedding():
-    """Parse arguments for diner embedding model training."""
+    """Parse arguments for diner embedding model training.
+
+    Most configs are loaded from config/models/graph/diner_embedding.yaml.
+    This parser only includes runtime overrides and experiment controls.
+    """
     parser = argparse.ArgumentParser()
 
     # Model selection
@@ -136,74 +140,22 @@ def parse_args_diner_embedding():
         choices=["diner_embedding"],
     )
 
-    # Device and workers
+    # Runtime settings
     parser.add_argument("--device", type=str, default="cpu", choices=["cpu", "cuda"])
     parser.add_argument("--num_workers", type=int, default=4)
+    parser.add_argument("--random_seed", type=int, default=42)
 
-    # Training hyperparameters
-    parser.add_argument("--batch_size", type=int, default=256)
-    parser.add_argument("--lr", type=float, default=0.001)
-    parser.add_argument("--weight_decay", type=float, default=1e-5)
-    parser.add_argument("--epochs", type=int, default=100)
-    parser.add_argument("--patience", type=int, default=10)
-
-    # Model architecture
-    parser.add_argument("--embedding_dim", type=int, default=128)
-    parser.add_argument("--category_dim", type=int, default=128)
-    parser.add_argument("--menu_dim", type=int, default=256)
-    parser.add_argument("--price_dim", type=int, default=32)
-    parser.add_argument("--num_attention_heads", type=int, default=4)
-    parser.add_argument("--dropout", type=float, default=0.1)
-
-    # KoBERT configuration
-    parser.add_argument("--kobert_model_name", type=str, default="monologg/kobert")
-    parser.add_argument(
-        "--use_precomputed_menu_embeddings", action="store_true", default=True
-    )
-
-    # Loss function
-    parser.add_argument("--margin", type=float, default=0.5)
-    parser.add_argument("--category_weight", type=float, default=0.1)
-    parser.add_argument("--gradient_clip", type=float, default=1.0)
-
-    # Hard negative mining
-    parser.add_argument("--num_hard_negatives", type=int, default=5)
-    parser.add_argument("--num_nearby_negatives", type=int, default=3)
-    parser.add_argument("--num_random_negatives", type=int, default=2)
-
-    # Data paths
-    parser.add_argument(
-        "--features_path",
-        type=str,
-        default="data/processed/diner_features.parquet",
-    )
-    parser.add_argument(
-        "--pairs_path",
-        type=str,
-        default="data/processed/training_pairs.parquet",
-    )
-    parser.add_argument(
-        "--val_pairs_path",
-        type=str,
-        default="data/processed/val_pairs.parquet",
-    )
-    parser.add_argument(
-        "--test_pairs_path",
-        type=str,
-        default="data/processed/test_pairs.parquet",
-    )
-    parser.add_argument(
-        "--category_mapping_path",
-        type=str,
-        default="data/processed/category_mapping.parquet",
-    )
+    # Common experiment overrides (defaults loaded from yaml)
+    parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument("--lr", type=float, default=None)
+    parser.add_argument("--batch_size", type=int, default=None)
+    parser.add_argument("--patience", type=int, default=None)
 
     # Output configuration
     parser.add_argument("--result_path", type=str, default=None)
     parser.add_argument("--config_root_path", type=str, default=None)
     parser.add_argument("--postfix", type=str, default=None)
     parser.add_argument("--test", action="store_true")
-    parser.add_argument("--random_seed", type=int, default=42)
 
     # Candidate generation
     parser.add_argument("--save_candidate", action="store_true")

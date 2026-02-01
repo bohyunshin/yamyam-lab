@@ -29,6 +29,9 @@ class DinerEmbeddingTrainer(BaseTrainer):
 
     Extends the GraphTrainer pattern for triplet-based training of diner embeddings.
     Uses Recall@10 and MRR for validation with early stopping.
+
+    Config is loaded from config/models/graph/diner_embedding.yaml.
+    Args can override specific values (epochs, lr, batch_size, patience).
     """
 
     def __init__(self, args):
@@ -52,36 +55,52 @@ class DinerEmbeddingTrainer(BaseTrainer):
             "mrr": [],
         }
 
+    def _get_config(self, key: str, section: str = "training") -> Any:
+        """Get config value, with args override if provided.
+
+        Args:
+            key: Config key name.
+            section: Config section ('model', 'training', 'data').
+
+        Returns:
+            Value from args if set, otherwise from config.
+        """
+        # Check if args has a non-None override
+        args_value = getattr(self.args, key, None)
+        if args_value is not None:
+            return args_value
+
+        # Get from config
+        config_section = getattr(self.config, section, {})
+        return getattr(config_section, key, None)
+
     def load_data(self) -> None:
         """Load and prepare diner embedding dataset."""
-        # Get data paths from config or args
-        features_path = getattr(
-            self.args, "features_path", "data/processed/diner_features.parquet"
-        )
-        pairs_path = getattr(
-            self.args, "pairs_path", "data/processed/training_pairs.parquet"
-        )
-        category_mapping_path = getattr(
-            self.args,
-            "category_mapping_path",
-            "data/processed/category_mapping.parquet",
-        )
-        val_pairs_path = getattr(
-            self.args, "val_pairs_path", "data/processed/val_pairs.parquet"
-        )
+        # Get data paths from config
+        data_config = self.config.data
+        features_path = data_config.features_path
+        pairs_path = data_config.pairs_path
+        category_mapping_path = data_config.category_mapping_path
+        val_pairs_path = data_config.val_pairs_path
+
+        # Get training config
+        training_config = self.config.training
+        batch_size = self._get_config("batch_size")
+        num_workers = getattr(self.args, "num_workers", 4)
+        random_seed = getattr(self.args, "random_seed", 42)
 
         # Create training dataloader
         self.train_loader, self.dataset = create_diner_embedding_dataloader(
             features_path=features_path,
             pairs_path=pairs_path,
             category_mapping_path=category_mapping_path,
-            batch_size=self.args.batch_size,
+            batch_size=batch_size,
             shuffle=True,
-            num_workers=getattr(self.args, "num_workers", 4),
-            num_hard_negatives=getattr(self.args, "num_hard_negatives", 5),
-            num_nearby_negatives=getattr(self.args, "num_nearby_negatives", 3),
-            num_random_negatives=getattr(self.args, "num_random_negatives", 2),
-            random_seed=getattr(self.args, "random_seed", 42),
+            num_workers=num_workers,
+            num_hard_negatives=training_config.num_hard_negatives,
+            num_nearby_negatives=training_config.num_nearby_negatives,
+            num_random_negatives=training_config.num_random_negatives,
+            random_seed=random_seed,
         )
 
         # Create validation dataloader if val_pairs exists
@@ -90,13 +109,13 @@ class DinerEmbeddingTrainer(BaseTrainer):
                 features_path=features_path,
                 pairs_path=val_pairs_path,
                 category_mapping_path=category_mapping_path,
-                batch_size=self.args.batch_size,
+                batch_size=batch_size,
                 shuffle=False,
-                num_workers=getattr(self.args, "num_workers", 4),
-                num_hard_negatives=getattr(self.args, "num_hard_negatives", 5),
-                num_nearby_negatives=getattr(self.args, "num_nearby_negatives", 3),
-                num_random_negatives=getattr(self.args, "num_random_negatives", 2),
-                random_seed=getattr(self.args, "random_seed", 42),
+                num_workers=num_workers,
+                num_hard_negatives=training_config.num_hard_negatives,
+                num_nearby_negatives=training_config.num_nearby_negatives,
+                num_random_negatives=training_config.num_random_negatives,
+                random_seed=random_seed,
             )
         else:
             self.val_loader = None
@@ -140,26 +159,23 @@ class DinerEmbeddingTrainer(BaseTrainer):
     def build_model(self) -> None:
         """Build diner embedding model."""
         top_k_values = self.get_top_k_values()
+        model_config = self.config.model
 
         # Create model config
         self.diner_embedding_config = DinerEmbeddingConfig(
             num_large_categories=self.data["num_large_categories"],
             num_middle_categories=self.data["num_middle_categories"],
             num_small_categories=self.data["num_small_categories"],
-            embedding_dim=getattr(self.args, "embedding_dim", 128),
-            category_dim=getattr(self.args, "category_dim", 128),
-            menu_dim=getattr(self.args, "menu_dim", 256),
-            diner_name_dim=getattr(self.args, "diner_name_dim", 64),
-            price_dim=getattr(self.args, "price_dim", 32),
-            num_attention_heads=getattr(self.args, "num_attention_heads", 4),
-            dropout=getattr(self.args, "dropout", 0.1),
-            kobert_model_name=getattr(self.args, "kobert_model_name", "klue/bert-base"),
-            use_precomputed_menu_embeddings=getattr(
-                self.args, "use_precomputed_menu_embeddings", True
-            ),
-            use_precomputed_name_embeddings=getattr(
-                self.args, "use_precomputed_name_embeddings", True
-            ),
+            embedding_dim=model_config.embedding_dim,
+            category_dim=model_config.category_dim,
+            menu_dim=model_config.menu_dim,
+            diner_name_dim=model_config.diner_name_dim,
+            price_dim=model_config.price_dim,
+            num_attention_heads=model_config.num_attention_heads,
+            dropout=model_config.dropout,
+            kobert_model_name=model_config.kobert_model_name,
+            use_precomputed_menu_embeddings=model_config.use_precomputed_menu_embeddings,
+            use_precomputed_name_embeddings=model_config.use_precomputed_name_embeddings,
             device=self.args.device,
             top_k_values=top_k_values,
             diner_ids=torch.arange(self.data["num_diners"]),
@@ -185,11 +201,18 @@ class DinerEmbeddingTrainer(BaseTrainer):
 
     def train_loop(self) -> None:
         """Training loop with early stopping based on Recall@10 and MRR."""
+        training_config = self.config.training
+
+        # Get hyperparameters (args override config)
+        lr = self._get_config("lr")
+        epochs = self._get_config("epochs")
+        patience = self._get_config("patience")
+
         # Optimizer
         optimizer = torch.optim.AdamW(
             self.model.parameters(),
-            lr=self.args.lr,
-            weight_decay=getattr(self.args, "weight_decay", 1e-5),
+            lr=lr,
+            weight_decay=training_config.weight_decay,
         )
 
         # Learning rate scheduler
@@ -197,11 +220,10 @@ class DinerEmbeddingTrainer(BaseTrainer):
             optimizer, mode="max", factor=0.5, patience=3, verbose=True
         )
 
-        # Get hyperparameters
-        margin = getattr(self.args, "margin", 0.5)
-        category_weight = getattr(self.args, "category_weight", 0.1)
-        gradient_clip = getattr(self.args, "gradient_clip", 1.0)
-        patience = self.args.patience
+        # Get loss hyperparameters from config
+        margin = training_config.margin
+        category_weight = training_config.category_weight
+        gradient_clip = training_config.gradient_clip
 
         # Early stopping variables
         best_val_metric = -float("inf")
@@ -214,7 +236,7 @@ class DinerEmbeddingTrainer(BaseTrainer):
             k: v.to(self.args.device) for k, v in self.data["all_features"].items()
         }
 
-        for epoch in range(self.args.epochs):
+        for epoch in range(epochs):
             self.logger.info(f"################## Epoch {epoch} ##################")
 
             # Training
@@ -493,9 +515,8 @@ class DinerEmbeddingTrainer(BaseTrainer):
 
     def evaluate_test(self) -> None:
         """Evaluate on test set."""
-        test_pairs_path = getattr(
-            self.args, "test_pairs_path", "data/processed/test_pairs.parquet"
-        )
+        data_config = self.config.data
+        test_pairs_path = data_config.test_pairs_path
 
         if not os.path.exists(test_pairs_path):
             self.logger.warning(
@@ -507,16 +528,10 @@ class DinerEmbeddingTrainer(BaseTrainer):
         original_val_dataset = self.val_dataset
 
         _, self.val_dataset = create_diner_embedding_dataloader(
-            features_path=getattr(
-                self.args, "features_path", "data/processed/diner_features.parquet"
-            ),
+            features_path=data_config.features_path,
             pairs_path=test_pairs_path,
-            category_mapping_path=getattr(
-                self.args,
-                "category_mapping_path",
-                "data/processed/category_mapping.parquet",
-            ),
-            batch_size=self.args.batch_size,
+            category_mapping_path=data_config.category_mapping_path,
+            batch_size=self._get_config("batch_size"),
             shuffle=False,
             num_workers=1,
         )
