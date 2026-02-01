@@ -151,7 +151,6 @@ def parse_args_diner_embedding():
     parser.add_argument("--embedding_dim", type=int, default=128)
     parser.add_argument("--category_dim", type=int, default=128)
     parser.add_argument("--menu_dim", type=int, default=256)
-    parser.add_argument("--review_dim", type=int, default=64)
     parser.add_argument("--price_dim", type=int, default=32)
     parser.add_argument("--num_attention_heads", type=int, default=4)
     parser.add_argument("--dropout", type=float, default=0.1)

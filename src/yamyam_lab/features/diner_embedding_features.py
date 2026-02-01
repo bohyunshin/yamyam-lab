@@ -191,59 +191,6 @@ def _process_category_features(
     return result_df, encoders
 
 
-def _process_review_features(
-    review_df: pd.DataFrame,
-    all_diner_ids: np.ndarray,
-    normalize: bool = True,
-) -> pd.DataFrame:
-    """Process review statistics per diner.
-
-    Args:
-        review_df: DataFrame with review data.
-        all_diner_ids: Array of all diner IDs.
-        normalize: Whether to normalize features.
-
-    Returns:
-        DataFrame with review features.
-    """
-    # Aggregate review statistics
-    review_agg = (
-        review_df.groupby("diner_idx")["reviewer_review_score"]
-        .agg(["mean", "count", "std"])
-        .reset_index()
-    )
-    review_agg.columns = [
-        "diner_idx",
-        "avg_review_score",
-        "review_count",
-        "std_review_score",
-    ]
-
-    # Fill std NaN (single review) with 0
-    review_agg["std_review_score"] = review_agg["std_review_score"].fillna(0)
-
-    # Ensure all diners are present
-    all_diners_df = pd.DataFrame({"diner_idx": all_diner_ids})
-    review_features = all_diners_df.merge(review_agg, on="diner_idx", how="left")
-
-    # Fill NaN for diners with no reviews
-    review_features["avg_review_score"] = review_features["avg_review_score"].fillna(
-        review_agg["avg_review_score"].mean()
-    )
-    review_features["review_count"] = review_features["review_count"].fillna(0)
-    review_features["std_review_score"] = review_features["std_review_score"].fillna(0)
-
-    # Normalize if requested
-    if normalize:
-        scaler = StandardScaler()
-        cols_to_normalize = ["avg_review_score", "review_count", "std_review_score"]
-        review_features[cols_to_normalize] = scaler.fit_transform(
-            review_features[cols_to_normalize]
-        )
-
-    return review_features
-
-
 def _process_price_features(
     menu_df: pd.DataFrame,
     all_diner_ids: np.ndarray,
