@@ -12,7 +12,6 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 import torch
-import torch.nn as nn
 from torch import Tensor
 
 from yamyam_lab.engine.base_trainer import BaseTrainer
