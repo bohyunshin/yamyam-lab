@@ -1,4 +1,4 @@
-"""Diner Embedding Model for restaurant recommendation.
+"""Multimodal Triplet Embedding Model for restaurant recommendation.
 
 This module implements a multi-modal embedding model for diners (restaurants)
 that creates 128-dimensional embeddings where dot-product similarity returns
@@ -11,6 +11,7 @@ The model uses 4 encoders:
 - PriceEncoder: Encodes price statistics (32d)
 
 These are fused using multi-head attention and projected to the final 128d embedding.
+Training uses triplet loss with hard negative mining.
 """
 
 from dataclasses import dataclass
@@ -23,7 +24,7 @@ from numpy.typing import NDArray
 from torch import Tensor
 
 from yamyam_lab.constant.metric.metric import Metric
-from yamyam_lab.model.graph.diner_embedding_encoders import (
+from yamyam_lab.model.embedding.encoders import (
     AttentionFusion,
     CategoryEncoder,
     DinerNameEncoder,
@@ -34,8 +35,8 @@ from yamyam_lab.model.graph.diner_embedding_encoders import (
 
 
 @dataclass
-class DinerEmbeddingConfig:
-    """Configuration for DinerEmbeddingModel.
+class MultimodalTripletConfig:
+    """Configuration for MultimodalTripletModel.
 
     Attributes:
         num_large_categories: Number of unique large categories.
@@ -77,10 +78,11 @@ class DinerEmbeddingConfig:
 
 
 class Model(nn.Module):
-    """Diner Embedding Model for restaurant recommendation.
+    """Multimodal Triplet Embedding Model for restaurant recommendation.
 
     Creates 128-dimensional embeddings for diners where dot-product similarity
-    returns semantically similar restaurants.
+    returns semantically similar restaurants. Trained using triplet loss with
+    hard negative mining.
 
     The model architecture:
     1. CategoryEncoder: Hierarchical category embeddings -> 128d
@@ -91,10 +93,10 @@ class Model(nn.Module):
     6. FinalProjection: MLP + L2 normalization -> 128d
 
     Args:
-        config: DinerEmbeddingConfig with model configuration.
+        config: MultimodalTripletConfig with model configuration.
     """
 
-    def __init__(self, config: DinerEmbeddingConfig):
+    def __init__(self, config: MultimodalTripletConfig):
         super().__init__()
         self.config = config
         self.embedding_dim = config.embedding_dim

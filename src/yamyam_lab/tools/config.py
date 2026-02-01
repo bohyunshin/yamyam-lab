@@ -18,11 +18,12 @@ def load_configs(model: str, config_root_path: str = None) -> Tuple[EasyDict, Ea
         "metapath2vec",
         "graphsage",
         "lightgcn",
-        "diner_embedding",
     ]:
         model_type = "graph"
     elif model in ["svd_bias", "als"]:
         model_type = "mf"
+    elif model in ["multimodal_triplet"]:
+        model_type = "embedding"
     else:
         raise ValueError(f"Unsupported model type: {model}")
     if config_root_path is None:

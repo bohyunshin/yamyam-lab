@@ -7,8 +7,8 @@ from yamyam_lab.engine import TrainerFactory
 from yamyam_lab.tools.parse_args import (
     parse_args,
     parse_args_als,
-    parse_args_diner_embedding,
     parse_args_graph,
+    parse_args_multimodal_triplet,
 )
 
 
@@ -38,8 +38,8 @@ if __name__ == "__main__":
             args = parse_args_graph()
         elif model == "als":
             args = parse_args_als()
-        elif model == "diner_embedding":
-            args = parse_args_diner_embedding()
+        elif model == "multimodal_triplet":
+            args = parse_args_multimodal_triplet()
         elif model in ["svd_bias"]:
             args = parse_args()
         else:

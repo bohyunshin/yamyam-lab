@@ -1,6 +1,7 @@
-# Diner Embedding Model Configuration
+# Multimodal Triplet Embedding Model Configuration
 # Creates 128-d embeddings for diners where dot-product similarity
 # returns semantically similar restaurants.
+# Uses triplet loss with hard negative mining for training.
 
 preprocess:
   data:

@@ -42,7 +42,6 @@ def parse_args_graph():
             "metapath2vec",
             "graphsage",
             "lightgcn",
-            "diner_embedding",
         ],
     )
     parser.add_argument("--device", type=str, default="cpu", choices=["cpu", "cuda"])
@@ -124,10 +123,10 @@ def parse_args_als():
     return parser.parse_args()
 
 
-def parse_args_diner_embedding():
-    """Parse arguments for diner embedding model training.
+def parse_args_multimodal_triplet():
+    """Parse arguments for multimodal triplet embedding model training.
 
-    Most configs are loaded from config/models/graph/diner_embedding.yaml.
+    Most configs are loaded from config/models/embedding/multimodal_triplet.yaml.
     This parser only includes runtime overrides and experiment controls.
     """
     parser = argparse.ArgumentParser()
@@ -136,8 +135,8 @@ def parse_args_diner_embedding():
     parser.add_argument(
         "--model",
         type=str,
-        default="diner_embedding",
-        choices=["diner_embedding"],
+        default="multimodal_triplet",
+        choices=["multimodal_triplet"],
     )
 
     # Runtime settings

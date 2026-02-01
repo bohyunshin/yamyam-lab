@@ -11,7 +11,7 @@ This folder contains architecture documentation for the yamyam-lab recommendatio
 │                                                             │
 │  Stage 1: Candidate Generation                              │
 │  ┌─────────────────────────────────────────────────────┐    │
-│  │  Diner Embedding Model                              │    │
+│  │  Multimodal Triplet Embedding Model                 │    │
 │  │  - Input: Diner metadata (category, menu, reviews)  │    │
 │  │  - Output: 128-d embedding                          │    │
 │  │  - Retrieval: Top-K similar diners via dot product  │    │
@@ -32,7 +32,7 @@ This folder contains architecture documentation for the yamyam-lab recommendatio
 
 | Document | Description |
 |----------|-------------|
-| [diner_embedding.md](./diner_embedding.md) | Candidate generation model architecture |
+| [multimodal_triplet.md](./multimodal_triplet.md) | Candidate generation model architecture |
 | reranker.md | (TODO) Reranking model architecture |
 | data_pipeline.md | (TODO) Data preprocessing pipeline |
 | evaluation.md | (TODO) Evaluation metrics and methodology |

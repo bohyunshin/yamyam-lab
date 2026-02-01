@@ -1,7 +1,7 @@
-"""Dataset and DataLoader for diner embedding model.
+"""Dataset and DataLoader for multimodal triplet embedding model.
 
 This module provides the dataset class and data loading utilities for
-training the diner embedding model with triplet loss.
+training the multimodal triplet embedding model with triplet loss.
 """
 
 import random
@@ -15,8 +15,8 @@ from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 
 
-class DinerEmbeddingDataset(Dataset):
-    """Dataset for diner embedding training with triplet loss.
+class MultimodalTripletDataset(Dataset):
+    """Dataset for multimodal triplet embedding training with triplet loss.
 
     This dataset generates triplets (anchor, positive, negative) for training.
     Positive pairs are diners that are semantically similar (e.g., co-reviewed
@@ -340,13 +340,13 @@ class DinerEmbeddingDataset(Dataset):
         }
 
 
-def diner_embedding_collate_fn(batch: List[Dict[str, Tensor]]) -> Dict[str, Tensor]:
-    """Collate function for DinerEmbeddingDataset.
+def multimodal_triplet_collate_fn(batch: List[Dict[str, Tensor]]) -> Dict[str, Tensor]:
+    """Collate function for MultimodalTripletDataset.
 
     Combines individual triplet samples into a batch.
 
     Args:
-        batch: List of samples from DinerEmbeddingDataset.
+        batch: List of samples from MultimodalTripletDataset.
 
     Returns:
         Dictionary containing batched tensors.
@@ -370,7 +370,7 @@ def diner_embedding_collate_fn(batch: List[Dict[str, Tensor]]) -> Dict[str, Tens
     }
 
 
-def create_diner_embedding_dataloader(
+def create_multimodal_triplet_dataloader(
     features_path: str,
     pairs_path: str,
     category_mapping_path: str,
@@ -381,8 +381,8 @@ def create_diner_embedding_dataloader(
     num_nearby_negatives: int = 3,
     num_random_negatives: int = 2,
     random_seed: int = 42,
-) -> Tuple[DataLoader, DinerEmbeddingDataset]:
-    """Create DataLoader for diner embedding training.
+) -> Tuple[DataLoader, MultimodalTripletDataset]:
+    """Create DataLoader for multimodal triplet embedding training.
 
     Args:
         features_path: Path to preprocessed features parquet file.
@@ -397,9 +397,9 @@ def create_diner_embedding_dataloader(
         random_seed: Random seed for reproducibility. Default: 42.
 
     Returns:
-        Tuple of (DataLoader, DinerEmbeddingDataset).
+        Tuple of (DataLoader, MultimodalTripletDataset).
     """
-    dataset = DinerEmbeddingDataset(
+    dataset = MultimodalTripletDataset(
         features_path=features_path,
         pairs_path=pairs_path,
         category_mapping_path=category_mapping_path,
@@ -414,7 +414,7 @@ def create_diner_embedding_dataloader(
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
-        collate_fn=diner_embedding_collate_fn,
+        collate_fn=multimodal_triplet_collate_fn,
         pin_memory=True,
         prefetch_factor=2 if num_workers > 0 else None,
     )

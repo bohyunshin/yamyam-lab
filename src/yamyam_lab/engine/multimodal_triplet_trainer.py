@@ -1,6 +1,6 @@
-"""Trainer for diner embedding model.
+"""Trainer for multimodal triplet embedding model.
 
-This module implements the trainer for the diner embedding model using
+This module implements the trainer for the multimodal triplet embedding model using
 triplet loss for learning restaurant embeddings.
 """
 
@@ -14,23 +14,23 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
-from yamyam_lab.data.diner_embedding import (
-    DinerEmbeddingDataset,
-    create_diner_embedding_dataloader,
+from yamyam_lab.data.multimodal_triplet import (
+    MultimodalTripletDataset,
+    create_multimodal_triplet_dataloader,
 )
 from yamyam_lab.engine.base_trainer import BaseTrainer
 from yamyam_lab.loss.triplet import triplet_margin_loss_with_multiple_negatives
-from yamyam_lab.model.graph.diner_embedding import DinerEmbeddingConfig, Model
+from yamyam_lab.model.embedding.multimodal_triplet import Model, MultimodalTripletConfig
 from yamyam_lab.tools.plot import plot_diner_embedding_metrics
 
 
-class DinerEmbeddingTrainer(BaseTrainer):
-    """Trainer for diner embedding model.
+class MultimodalTripletTrainer(BaseTrainer):
+    """Trainer for multimodal triplet embedding model.
 
     Extends the GraphTrainer pattern for triplet-based training of diner embeddings.
     Uses Recall@10 and MRR for validation with early stopping.
 
-    Config is loaded from config/models/graph/diner_embedding.yaml.
+    Config is loaded from config/models/embedding/multimodal_triplet.yaml.
     Args can override specific values (epochs, lr, batch_size, patience).
     """
 
@@ -41,10 +41,10 @@ class DinerEmbeddingTrainer(BaseTrainer):
             args: Parsed command-line arguments.
         """
         super().__init__(args)
-        self.dataset: Optional[DinerEmbeddingDataset] = None
-        self.val_dataset: Optional[DinerEmbeddingDataset] = None
+        self.dataset: Optional[MultimodalTripletDataset] = None
+        self.val_dataset: Optional[MultimodalTripletDataset] = None
         self.model: Optional[Model] = None
-        self.diner_embedding_config: Optional[DinerEmbeddingConfig] = None
+        self.multimodal_triplet_config: Optional[MultimodalTripletConfig] = None
 
         # Validation metrics history for plotting
         self.val_metrics_history: Dict[str, list] = {
@@ -75,7 +75,7 @@ class DinerEmbeddingTrainer(BaseTrainer):
         return getattr(config_section, key, None)
 
     def load_data(self) -> None:
-        """Load and prepare diner embedding dataset."""
+        """Load and prepare multimodal triplet dataset."""
         # Get data paths from config
         data_config = self.config.data
         features_path = data_config.features_path
@@ -90,7 +90,7 @@ class DinerEmbeddingTrainer(BaseTrainer):
         random_seed = getattr(self.args, "random_seed", 42)
 
         # Create training dataloader
-        self.train_loader, self.dataset = create_diner_embedding_dataloader(
+        self.train_loader, self.dataset = create_multimodal_triplet_dataloader(
             features_path=features_path,
             pairs_path=pairs_path,
             category_mapping_path=category_mapping_path,
@@ -105,7 +105,7 @@ class DinerEmbeddingTrainer(BaseTrainer):
 
         # Create validation dataloader if val_pairs exists
         if os.path.exists(val_pairs_path):
-            self.val_loader, self.val_dataset = create_diner_embedding_dataloader(
+            self.val_loader, self.val_dataset = create_multimodal_triplet_dataloader(
                 features_path=features_path,
                 pairs_path=val_pairs_path,
                 category_mapping_path=category_mapping_path,
@@ -139,7 +139,7 @@ class DinerEmbeddingTrainer(BaseTrainer):
     def log_data_statistics(self) -> None:
         """Log data statistics after loading."""
         self.logger.info("=" * 50)
-        self.logger.info("Diner Embedding Data Statistics")
+        self.logger.info("Multimodal Triplet Embedding Data Statistics")
         self.logger.info("=" * 50)
         self.logger.info(f"Number of diners: {self.data['num_diners']}")
         self.logger.info(
@@ -157,12 +157,12 @@ class DinerEmbeddingTrainer(BaseTrainer):
         self.logger.info("=" * 50)
 
     def build_model(self) -> None:
-        """Build diner embedding model."""
+        """Build multimodal triplet embedding model."""
         top_k_values = self.get_top_k_values()
         model_config = self.config.model
 
         # Create model config
-        self.diner_embedding_config = DinerEmbeddingConfig(
+        self.multimodal_triplet_config = MultimodalTripletConfig(
             num_large_categories=self.data["num_large_categories"],
             num_middle_categories=self.data["num_middle_categories"],
             num_small_categories=self.data["num_small_categories"],
@@ -183,7 +183,7 @@ class DinerEmbeddingTrainer(BaseTrainer):
         )
 
         # Create model
-        self.model = Model(config=self.diner_embedding_config).to(self.args.device)
+        self.model = Model(config=self.multimodal_triplet_config).to(self.args.device)
 
         self.logger.info(f"Model created with {self._count_parameters()} parameters")
 
@@ -192,7 +192,7 @@ class DinerEmbeddingTrainer(BaseTrainer):
         return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
 
     def build_metric_calculator(self) -> None:
-        """Build metric calculator for diner embedding model.
+        """Build metric calculator for multimodal triplet model.
 
         Uses custom metrics: Recall@K, MRR.
         """
@@ -494,7 +494,7 @@ class DinerEmbeddingTrainer(BaseTrainer):
         torch.save(
             {
                 "model_state_dict": self.model.state_dict(),
-                "config": self.diner_embedding_config,
+                "config": self.multimodal_triplet_config,
                 "epoch": epoch,
                 "metrics": metrics,
             },
@@ -527,7 +527,7 @@ class DinerEmbeddingTrainer(BaseTrainer):
         # Temporarily swap validation dataset for test
         original_val_dataset = self.val_dataset
 
-        _, self.val_dataset = create_diner_embedding_dataloader(
+        _, self.val_dataset = create_multimodal_triplet_dataloader(
             features_path=data_config.features_path,
             pairs_path=test_pairs_path,
             category_mapping_path=data_config.category_mapping_path,

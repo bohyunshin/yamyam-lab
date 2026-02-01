@@ -1,10 +1,10 @@
-# Diner Embedding Model
+# Multimodal Triplet Embedding Model
 
-This document describes the architecture of the diner embedding model used for candidate generation in the two-stage recommendation system.
+This document describes the architecture of the multimodal triplet embedding model used for candidate generation in the two-stage recommendation system.
 
 ## Overview
 
-The diner embedding model creates 128-dimensional embeddings for restaurants (diners) such that semantically similar restaurants have high dot-product similarity. This enables fast approximate nearest neighbor search for the "Similar Diners" feature.
+The multimodal triplet embedding model creates 128-dimensional embeddings for restaurants (diners) such that semantically similar restaurants have high dot-product similarity. This enables fast approximate nearest neighbor search for the "Similar Diners" feature.
 
 **Goal**: Distinguish restaurants by style/quality, not just category.
 - Shake Shack → premium American burger joints ✓
@@ -220,16 +220,16 @@ This forces the model to distinguish quality/style within the same category (e.g
 poetry run python scripts/prepare_diner_embedding_data.py --local_data_dir data/
 
 # Train model
-poetry run python -m yamyam_lab.train --model diner_embedding --epochs 50 --device cuda
+poetry run python -m yamyam_lab.train --model multimodal_triplet --epochs 50 --device cuda
 ```
 
 ### Inference
 
 ```python
-from yamyam_lab.model.graph.diner_embedding import Model
+from yamyam_lab.model.embedding.multimodal_triplet import Model
 
 # Load trained model
-model = Model.load("result/diner_embedding/best_model.pt")
+model = Model.load("result/multimodal_triplet/best_model.pt")
 
 # Get embedding for a diner
 embedding = model.encode(diner_features)  # (1, 128)
@@ -245,9 +245,9 @@ top_k_indices = similarities.argsort(descending=True)[:10]
 
 | File | Description |
 |------|-------------|
-| `src/yamyam_lab/model/graph/diner_embedding.py` | Main model class |
-| `src/yamyam_lab/model/graph/diner_embedding_encoders.py` | Encoder modules |
+| `src/yamyam_lab/model/embedding/multimodal_triplet.py` | Main model class |
+| `src/yamyam_lab/model/embedding/encoders.py` | Encoder modules |
 | `src/yamyam_lab/loss/triplet.py` | Triplet loss functions |
-| `src/yamyam_lab/data/diner_embedding.py` | Dataset and DataLoader |
-| `src/yamyam_lab/engine/diner_embedding_trainer.py` | Training logic |
-| `config/models/graph/diner_embedding.yaml` | Hyperparameters |
+| `src/yamyam_lab/data/multimodal_triplet.py` | Dataset and DataLoader |
+| `src/yamyam_lab/engine/multimodal_triplet_trainer.py` | Training logic |
+| `config/models/embedding/multimodal_triplet.yaml` | Hyperparameters |

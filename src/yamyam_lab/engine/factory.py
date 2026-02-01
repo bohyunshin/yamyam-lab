@@ -5,8 +5,8 @@ from typing import Type
 
 from yamyam_lab.engine.als_trainer import ALSTrainer
 from yamyam_lab.engine.base_trainer import BaseTrainer
-from yamyam_lab.engine.diner_embedding_trainer import DinerEmbeddingTrainer
 from yamyam_lab.engine.graph_trainer import GraphTrainer
+from yamyam_lab.engine.multimodal_triplet_trainer import MultimodalTripletTrainer
 from yamyam_lab.engine.torch_trainer import TorchTrainer
 
 
@@ -21,7 +21,7 @@ class TrainerFactory:
         "metapath2vec": GraphTrainer,
         "lightgcn": GraphTrainer,
         "svd_bias": TorchTrainer,
-        "diner_embedding": DinerEmbeddingTrainer,
+        "multimodal_triplet": MultimodalTripletTrainer,
     }
 
     @classmethod

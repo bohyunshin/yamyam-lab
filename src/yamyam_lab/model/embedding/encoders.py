@@ -1,4 +1,4 @@
-"""Encoder modules for diner embedding model.
+"""Encoder modules for multimodal triplet embedding model.
 
 This module contains the encoder components used to create diner embeddings:
 - CategoryEncoder: Encodes hierarchical category features (large, middle, small)
@@ -133,20 +133,14 @@ class MenuEncoder(nn.Module):
     def _load_kobert(self, device: torch.device) -> None:
         """Lazy load KoBERT model."""
         if self._kobert is None:
-            try:
-                from transformers import BertModel
+            from transformers import BertModel
 
-                self._kobert = BertModel.from_pretrained(self.kobert_model_name)
-                self._kobert = self._kobert.to(device)
-                # Freeze KoBERT weights
-                for param in self._kobert.parameters():
-                    param.requires_grad = False
-                self._kobert.eval()
-            except ImportError:
-                raise ImportError(
-                    "transformers package is required for MenuEncoder. "
-                    "Install it with: pip install transformers>=4.30.0"
-                )
+            self._kobert = BertModel.from_pretrained(self.kobert_model_name)
+            self._kobert = self._kobert.to(device)
+            # Freeze KoBERT weights
+            for param in self._kobert.parameters():
+                param.requires_grad = False
+            self._kobert.eval()
 
     def forward(
         self,
@@ -235,20 +229,14 @@ class DinerNameEncoder(nn.Module):
     def _load_kobert(self, device: torch.device) -> None:
         """Lazy load KoBERT model."""
         if self._kobert is None:
-            try:
-                from transformers import BertModel
+            from transformers import BertModel
 
-                self._kobert = BertModel.from_pretrained(self.kobert_model_name)
-                self._kobert = self._kobert.to(device)
-                # Freeze KoBERT weights
-                for param in self._kobert.parameters():
-                    param.requires_grad = False
-                self._kobert.eval()
-            except ImportError:
-                raise ImportError(
-                    "transformers package is required for DinerNameEncoder. "
-                    "Install it with: pip install transformers>=4.30.0"
-                )
+            self._kobert = BertModel.from_pretrained(self.kobert_model_name)
+            self._kobert = self._kobert.to(device)
+            # Freeze KoBERT weights
+            for param in self._kobert.parameters():
+                param.requires_grad = False
+            self._kobert.eval()
 
     def forward(
         self,
