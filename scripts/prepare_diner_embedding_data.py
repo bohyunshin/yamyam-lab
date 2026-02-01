@@ -13,7 +13,7 @@ Input files (from data/ directory or Google Drive):
     - review.csv: Review data with columns [diner_idx, reviewer_id, reviewer_review_score, ...]
     - diner.csv: Diner data with columns [diner_idx, ...]
     - menu.csv: Menu data with columns [diner_idx, menu_name, menu_price]
-    - category.csv: Category data with columns [diner_idx, diner_category_large, ...]
+    - diner_category_filled.csv: Category data with ML-filled missing values [diner_idx, diner_category_large, ...]
 
 Output files:
     - diner_features.parquet: Preprocessed features for all diners
@@ -123,7 +123,7 @@ def load_data(args) -> dict:
         data_dir = Path(args.local_data_dir)
         review_df = pd.read_csv(data_dir / "review.csv")
         diner_df = pd.read_csv(data_dir / "diner.csv", low_memory=False)
-        category_df = pd.read_csv(data_dir / "diner_category.csv")
+        category_df = pd.read_csv(data_dir / "diner_category_filled.csv")
 
         # Menu might not exist
         menu_path = data_dir / "menu_df.csv"
