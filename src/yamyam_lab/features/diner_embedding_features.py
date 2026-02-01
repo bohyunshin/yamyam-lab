@@ -14,7 +14,9 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
+import torch
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+from transformers import AutoModel, AutoTokenizer
 
 
 def prepare_diner_features(
@@ -266,26 +268,13 @@ def _process_menu_embeddings(
     Returns:
         DataFrame with menu embeddings (768 dimensions).
     """
-    try:
-        import torch
-        from transformers import AutoModel, AutoTokenizer
+    # Load tokenizer and model
+    tokenizer = AutoTokenizer.from_pretrained(kobert_model_name)
+    model = AutoModel.from_pretrained(kobert_model_name)
+    model.eval()
 
-        # Load tokenizer and model
-        tokenizer = AutoTokenizer.from_pretrained(kobert_model_name)
-        model = AutoModel.from_pretrained(kobert_model_name)
-        model.eval()
-
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model = model.to(device)
-
-    except ImportError:
-        # Return placeholder if transformers not available
-        print("Warning: transformers not installed. Returning zero menu embeddings.")
-        embedding_cols = [f"menu_{i}" for i in range(768)]
-        result = pd.DataFrame({"diner_idx": all_diner_ids})
-        for col in embedding_cols:
-            result[col] = 0.0
-        return result
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
 
     # Aggregate menu names per diner
     if "menu_name" in menu_df.columns:
@@ -363,28 +352,13 @@ def _process_diner_name_embeddings(
     Returns:
         DataFrame with diner name embeddings (768 dimensions).
     """
-    try:
-        import torch
-        from transformers import AutoModel, AutoTokenizer
+    # Load tokenizer and model
+    tokenizer = AutoTokenizer.from_pretrained(kobert_model_name)
+    model = AutoModel.from_pretrained(kobert_model_name)
+    model.eval()
 
-        # Load tokenizer and model
-        tokenizer = AutoTokenizer.from_pretrained(kobert_model_name)
-        model = AutoModel.from_pretrained(kobert_model_name)
-        model.eval()
-
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        model = model.to(device)
-
-    except ImportError:
-        # Return placeholder if transformers not available
-        print(
-            "Warning: transformers not installed. Returning zero diner name embeddings."
-        )
-        embedding_cols = [f"name_{i}" for i in range(768)]
-        result = pd.DataFrame({"diner_idx": all_diner_ids})
-        for col in embedding_cols:
-            result[col] = 0.0
-        return result
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
 
     # Get diner names
     if "diner_name" in diner_df.columns:
