@@ -101,6 +101,59 @@ def triplet_margin_loss_with_category(
     return base_loss + category_weight * category_loss
 
 
+def triplet_margin_loss_with_multiple_negatives(
+    anchor: Tensor,
+    positive: Tensor,
+    negatives: Tensor,
+    anchor_category: Tensor,
+    positive_category: Tensor,
+    negative_categories: Tensor,
+    margin: float = 0.5,
+    category_weight: float = 0.1,
+) -> Tensor:
+    """Compute triplet margin loss with multiple negatives per anchor.
+
+    This is a batched version that processes all negatives in one pass,
+    avoiding the need to loop over negatives individually.
+
+    Args:
+        anchor: Tensor of shape (batch_size, embedding_dim) with L2-normalized anchor embeddings.
+        positive: Tensor of shape (batch_size, embedding_dim) with L2-normalized positive embeddings.
+        negatives: Tensor of shape (batch_size, num_negatives, embedding_dim) with L2-normalized negative embeddings.
+        anchor_category: Tensor of shape (batch_size,) with anchor category IDs.
+        positive_category: Tensor of shape (batch_size,) with positive category IDs.
+        negative_categories: Tensor of shape (batch_size, num_negatives) with negative category IDs.
+        margin: Margin for triplet loss. Default: 0.5.
+        category_weight: Weight for category regularization. Default: 0.1.
+
+    Returns:
+        Scalar tensor with combined loss averaged over all negatives.
+    """
+    # anchor: (B, D), positive: (B, D), negatives: (B, N, D)
+    # Compute positive similarity: (B,)
+    pos_similarity = torch.sum(anchor * positive, dim=-1)
+
+    # Compute negative similarities: (B, N)
+    # anchor.unsqueeze(1): (B, 1, D), negatives: (B, N, D)
+    neg_similarities = torch.sum(anchor.unsqueeze(1) * negatives, dim=-1)
+
+    # Triplet loss for each negative: (B, N)
+    # margin - (pos_sim - neg_sim) for each negative
+    triplet_losses = torch.clamp(
+        margin - (pos_similarity.unsqueeze(1) - neg_similarities), min=0
+    )
+
+    # Base triplet loss: mean over all (batch, negatives)
+    base_loss = triplet_losses.mean()
+
+    # Category-aware regularization (same as single-negative version)
+    same_category_mask = (anchor_category == positive_category).float()
+    category_loss = same_category_mask * (1 - pos_similarity)
+    category_loss = category_loss.mean()
+
+    return base_loss + category_weight * category_loss
+
+
 def batch_hard_triplet_loss(
     embeddings: Tensor,
     labels: Tensor,

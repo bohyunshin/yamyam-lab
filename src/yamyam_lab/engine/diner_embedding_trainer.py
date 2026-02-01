@@ -19,7 +19,7 @@ from yamyam_lab.data.diner_embedding import (
     create_diner_embedding_dataloader,
 )
 from yamyam_lab.engine.base_trainer import BaseTrainer
-from yamyam_lab.loss.triplet import triplet_margin_loss_with_category
+from yamyam_lab.loss.triplet import triplet_margin_loss_with_multiple_negatives
 from yamyam_lab.model.graph.diner_embedding import DinerEmbeddingConfig, Model
 from yamyam_lab.tools.plot import plot_diner_embedding_metrics
 
@@ -243,36 +243,41 @@ class DinerEmbeddingTrainer(BaseTrainer):
                     all_features, positive_indices
                 )
 
-                # Compute embeddings
+                # Compute anchor and positive embeddings
                 anchor_emb = self.model(anchor_features)
                 positive_emb = self.model(positive_features)
 
-                # Compute loss for each negative
-                batch_loss = torch.tensor(0.0, device=self.args.device)
+                # Batch all negatives into a single forward pass
+                # negative_indices: (B, num_negatives) -> (B * num_negatives,)
+                batch_size = negative_indices.size(0)
                 num_negatives = negative_indices.size(1)
+                flat_negative_indices = negative_indices.view(-1)
 
-                for neg_idx in range(num_negatives):
-                    neg_indices = negative_indices[:, neg_idx]
-                    neg_features = self._get_features_by_indices(
-                        all_features, neg_indices
-                    )
-                    negative_emb = self.model(neg_features)
+                # Get features for all negatives at once
+                flat_negative_features = self._get_features_by_indices(
+                    all_features, flat_negative_indices
+                )
 
-                    # Triplet loss with category regularization
-                    loss = triplet_margin_loss_with_category(
-                        anchor=anchor_emb,
-                        positive=positive_emb,
-                        negative=negative_emb,
-                        anchor_category=anchor_categories,
-                        positive_category=positive_categories,
-                        negative_category=negative_categories[:, neg_idx],
-                        margin=margin,
-                        category_weight=category_weight,
-                    )
-                    batch_loss = batch_loss + loss
+                # Single forward pass for all negatives
+                flat_negative_emb = self.model(flat_negative_features)
 
-                # Average over negatives
-                batch_loss = batch_loss / num_negatives
+                # Reshape to (B, num_negatives, embedding_dim)
+                embedding_dim = flat_negative_emb.size(-1)
+                negative_emb = flat_negative_emb.view(
+                    batch_size, num_negatives, embedding_dim
+                )
+
+                # Compute batched triplet loss with all negatives
+                batch_loss = triplet_margin_loss_with_multiple_negatives(
+                    anchor=anchor_emb,
+                    positive=positive_emb,
+                    negatives=negative_emb,
+                    anchor_category=anchor_categories,
+                    positive_category=positive_categories,
+                    negative_categories=negative_categories,
+                    margin=margin,
+                    category_weight=category_weight,
+                )
 
                 # Backward pass
                 batch_loss.backward()
