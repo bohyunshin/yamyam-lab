@@ -11,6 +11,7 @@
 | `scripts/build_regions.py`             | Used when generating region cluster                                |
 | `scripts/prepare_diner_embedding_data.py` | Used when preparing data for diner embedding model              |
 | `scripts/evaluate_diner_similarity.py` | Used for qualitative evaluation of diner embedding model           |
+| `scripts/process_category.py`          | Used when processing diner category data                           |
 ## How to download candidate generation or trained model result
 
 Here, we run `scripts/download_result.py` python file to download results.
@@ -380,3 +381,59 @@ Commands in interactive mode:
 | `--top_n` | Number of similar diners to show (default: 10) |
 | `--device` | Device to use: cpu or cuda (default: cpu) |
 | `--interactive` | Run in interactive mode |
+
+## How to process diner category data
+
+`scripts/process_category.py`는 음식점 카테고리 데이터를 전처리하는 스크립트입니다. `CategoryProcessor`와 `MiddleCategorySimplifier`를 순차적으로 실행하여 카테고리 데이터를 정제합니다.
+
+### 주요 기능
+
+- 🍗 치킨 카테고리 특수 처리 (구운치킨/프라이드치킨 분류)
+- 📊 대분류/중분류 카테고리 조정 (lowering)
+- 🔄 중분류 통합 및 이름 변경
+- 📝 중분류 간소화 (브랜드명 → 음식 종류)
+
+### 사용법
+
+```bash
+# 기본 사용법
+poetry run python scripts/process_category.py \
+    --input path/to/diner_category.csv \
+    --output path/to/diner_category_processed.csv
+
+# 커스텀 config 경로 지정
+poetry run python scripts/process_category.py \
+    --input path/to/diner_category.csv \
+    --output path/to/diner_category_processed.csv \
+    --config-root-path /custom/config/path
+
+# MiddleCategorySimplifier 스킵 (CategoryProcessor만 실행)
+poetry run python scripts/process_category.py \
+    --input path/to/diner_category.csv \
+    --output path/to/diner_category_processed.csv \
+    --skip-simplifier
+```
+
+### 파라미터 설명
+
+| Parameter name      | Required | Description                                              |
+|---------------------|----------|----------------------------------------------------------|
+| `--input`           | Yes      | 입력 CSV 파일 경로                                        |
+| `--output`          | Yes      | 출력 CSV 파일 경로                                        |
+| `--config-root-path`| No       | Config 디렉터리 경로 (기본값: `config/`)                   |
+| `--data-path`       | No       | MiddleCategorySimplifier용 데이터 경로 (기본값: `src/data/`) |
+| `--skip-simplifier` | No       | MiddleCategorySimplifier 단계 스킵                        |
+
+### 처리 단계
+
+1. **CategoryProcessor** (`config/data/category_mappings.yaml` 기반)
+   - `process_chicken_categories()`: 치킨 카테고리 처리
+   - `process_lowering_categories(level="large")`: 대분류 하향 조정
+   - `process_lowering_categories(level="middle")`: 중분류 하향 조정
+   - `process_partly_lowering_categories()`: 부분적 카테고리 조정
+   - `integrate_diner_category_middle()`: 중분류 통합
+   - `rename_diner_category_middle()`: 중분류 이름 변경
+
+2. **MiddleCategorySimplifier** (`config/data/category_mappings.yaml`의 `simplify_mapping` 기반)
+   - 브랜드/체인점 중심 분류를 음식 종류 중심으로 간소화
+
