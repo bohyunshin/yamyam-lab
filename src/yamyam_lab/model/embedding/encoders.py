@@ -13,6 +13,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
+from transformers import BertModel
 
 
 class CategoryEncoder(nn.Module):
@@ -133,8 +134,6 @@ class MenuEncoder(nn.Module):
     def _load_kobert(self, device: torch.device) -> None:
         """Lazy load KoBERT model."""
         if self._kobert is None:
-            from transformers import BertModel
-
             self._kobert = BertModel.from_pretrained(self.kobert_model_name)
             self._kobert = self._kobert.to(device)
             # Freeze KoBERT weights
@@ -229,8 +228,6 @@ class DinerNameEncoder(nn.Module):
     def _load_kobert(self, device: torch.device) -> None:
         """Lazy load KoBERT model."""
         if self._kobert is None:
-            from transformers import BertModel
-
             self._kobert = BertModel.from_pretrained(self.kobert_model_name)
             self._kobert = self._kobert.to(device)
             # Freeze KoBERT weights
